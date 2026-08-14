@@ -59,5 +59,8 @@ export const api = {
     request(`/admin/slides/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }),
   deleteSlide: (id) => request(`/admin/slides/${id}`, { method: 'DELETE' }),
 
+  uploadLogo: (formData) => request('/admin/logo', { method: 'POST', body: formData }),
+  deleteLogo: () => request('/admin/logo', { method: 'DELETE' }),
+
   getDisplayData: () => request('/display-data'),
 }
