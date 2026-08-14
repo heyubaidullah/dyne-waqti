@@ -1,0 +1,11 @@
+/data/
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+/waqti
+/waqti.exe
+*.exe
+.DS_Store
+/web/admin/node_modules/
+/web/admin/dist/
