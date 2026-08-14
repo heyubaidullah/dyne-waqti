@@ -99,7 +99,12 @@ export default function SettingsForm({ settings, runGuarded }) {
               options={TIMEZONES}
               getOptionLabel={(opt) => (typeof opt === 'string' ? opt : opt.label)}
               inputValue={form.timezone}
-              onInputChange={(e, newInputValue) => {
+              onInputChange={(e, newInputValue, reason) => {
+                // Only free typing should write straight through — a
+                // dropdown selection fires this too (reason 'reset', with
+                // the friendly label as newInputValue), and onChange below
+                // is the one that should win for that case.
+                if (reason !== 'input') return
                 setForm((f) => ({ ...f, timezone: newInputValue }))
                 setSaved(false)
               }}
