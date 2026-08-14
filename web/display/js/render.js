@@ -9,6 +9,10 @@ let currentStateName = null;
 // machine's own system timezone — a misconfigured or unset OS timezone on
 // bare kiosk hardware must never affect what clock time is shown.
 let currentTimezone = 'UTC';
+// Whether a logo has been uploaded — the <img> only ever shows alongside
+// the rest of the base layer (Idle/Countdown), never during
+// Silence/Blackout/Emergency.
+let hasLogo = false;
 
 function hideAllOverlays() {
   dom.stateCountdown.classList.add('hidden');
@@ -17,9 +21,14 @@ function hideAllOverlays() {
   dom.stateEmergency.classList.add('hidden');
 }
 
+function isBaseLayerState() {
+  return currentStateName === 'IDLE' || currentStateName === 'COUNTDOWN';
+}
+
 function setBaseLayerVisible(visible) {
   dom.carouselViewport.classList.toggle('hidden', !visible);
   dom.infoBar.classList.toggle('hidden', !visible);
+  dom.logoEl.classList.toggle('hidden', !visible || !hasLogo);
 }
 
 // Called every tick, but only acts when the state actually changed since
@@ -105,6 +114,13 @@ export function tickUpdate(result, now) {
 // 1s tick loop.
 export function updateStaticFields(data) {
   currentTimezone = data.timezone;
+
+  hasLogo = Boolean(data.logo_url);
+  if (hasLogo) dom.logoEl.src = data.logo_url;
+  // Re-sync immediately rather than waiting for the next state
+  // transition — a logo can be uploaded/removed while already Idle.
+  dom.logoEl.classList.toggle('hidden', !hasLogo || !isBaseLayerState());
+
   dom.hijriDateEl.textContent = `${data.hijri.day}/${data.hijri.month}/${data.hijri.year} AH`;
   for (const name of PRAYER_ORDER) {
     const col = dom.prayerCols[name];

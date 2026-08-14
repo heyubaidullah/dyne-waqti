@@ -8,6 +8,10 @@
   </head>
   <body class="h-screen w-screen overflow-hidden bg-background-dark text-text-primary font-sans">
     <div id="app" class="relative h-full w-full">
+      <!-- Masjid logo: part of the base layer, shown/hidden together with
+           the carousel/info-bar (Idle/Countdown only). -->
+      <img id="logo" class="hidden absolute top-4 left-4 max-h-16 max-w-48 object-contain z-10 rounded bg-surface-slate/70 p-1" alt="Masjid logo" />
+
       <!-- Base layer: carousel (full during Idle, shrunk during Countdown) + info bar (Idle only) -->
       <div id="carousel-viewport" class="absolute top-0 left-0 w-full h-[75%] transition-all duration-500 overflow-hidden">
         <div id="carousel-slide" class="fade h-full w-full flex flex-col items-center justify-center px-16 text-center"></div>
