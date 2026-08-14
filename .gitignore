@@ -7,5 +7,6 @@
 /waqti.exe
 *.exe
 .DS_Store
+.claude/
 /web/admin/node_modules/
 /web/admin/dist/
