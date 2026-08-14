@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Waqti Display</title>
+    <link rel="stylesheet" href="/display/css/output.css" />
+  </head>
+  <body class="h-screen w-screen overflow-hidden bg-background-dark text-text-primary font-sans">
+    <div id="app" class="relative h-full w-full">
+      <!-- Base layer: carousel (full during Idle, shrunk during Countdown) + info bar (Idle only) -->
+      <div id="carousel-viewport" class="absolute top-0 left-0 w-full h-[75%] transition-all duration-500 overflow-hidden">
+        <div id="carousel-slide" class="fade h-full w-full flex flex-col items-center justify-center px-16 text-center"></div>
+      </div>
+
+      <div id="info-bar" class="absolute bottom-0 left-0 w-full h-[25%] bg-surface-slate flex items-center justify-between px-10 gap-6">
+        <div id="prayer-grid" class="grid grid-cols-6 gap-4 flex-1">
+          <div class="prayer-col text-center" data-prayer="fajr">
+            <div class="prayer-name text-text-secondary text-lg">Fajr</div>
+            <div class="adhan-time text-text-secondary text-sm"></div>
+            <div class="iqamah-time text-2xl font-bold"></div>
+          </div>
+          <div class="prayer-col text-center" data-prayer="dhuhr">
+            <div class="prayer-name text-text-secondary text-lg">Dhuhr</div>
+            <div class="adhan-time text-text-secondary text-sm"></div>
+            <div class="iqamah-time text-2xl font-bold"></div>
+          </div>
+          <div class="prayer-col text-center" data-prayer="asr">
+            <div class="prayer-name text-text-secondary text-lg">Asr</div>
+            <div class="adhan-time text-text-secondary text-sm"></div>
+            <div class="iqamah-time text-2xl font-bold"></div>
+          </div>
+          <div class="prayer-col text-center" data-prayer="maghrib">
+            <div class="prayer-name text-text-secondary text-lg">Maghrib</div>
+            <div class="adhan-time text-text-secondary text-sm"></div>
+            <div class="iqamah-time text-2xl font-bold"></div>
+          </div>
+          <div class="prayer-col text-center" data-prayer="isha">
+            <div class="prayer-name text-text-secondary text-lg">Isha</div>
+            <div class="adhan-time text-text-secondary text-sm"></div>
+            <div class="iqamah-time text-2xl font-bold"></div>
+          </div>
+          <div class="prayer-col text-center" data-prayer="jumuah">
+            <div class="prayer-name text-text-secondary text-lg">Jumu'ah</div>
+            <div class="adhan-time text-text-secondary text-sm">&nbsp;</div>
+            <div class="iqamah-time text-2xl font-bold"></div>
+          </div>
+        </div>
+        <div class="text-right shrink-0">
+          <div id="clock" class="text-4xl font-bold text-accent-gold"></div>
+          <div id="hijri-date" class="text-lg text-text-secondary"></div>
+          <div id="idle-next-countdown" class="text-sm text-status-emerald mt-1"></div>
+        </div>
+      </div>
+
+      <!-- Overlays -->
+      <div id="state-countdown" class="hidden absolute inset-0 flex flex-col items-center justify-end pb-12 bg-black/50">
+        <div id="countdown-prayer-name" class="text-3xl text-text-secondary mb-2"></div>
+        <div id="countdown-timer" class="text-8xl font-bold text-accent-gold tabular-nums"></div>
+      </div>
+
+      <div id="state-silence" class="hidden absolute inset-0 flex items-center justify-center bg-background-dark">
+        <p class="text-3xl text-text-secondary text-center px-16">Please silence mobile phones and straighten rows.</p>
+      </div>
+
+      <div id="state-blackout" class="hidden absolute inset-0 bg-black"></div>
+
+      <div id="state-emergency" class="hidden absolute inset-0 flex flex-col items-center justify-center bg-background-dark border-8 border-alert-red text-center px-16">
+        <div class="text-2xl text-text-secondary mb-4 tracking-widest uppercase">Janazah Prayer Notice</div>
+        <div id="emergency-name" class="text-5xl font-bold text-text-primary mb-6"></div>
+        <div id="emergency-time" class="text-3xl text-accent-gold mb-2"></div>
+        <div id="emergency-location" class="text-2xl text-text-secondary"></div>
+      </div>
+    </div>
+
+    <script type="module" src="/display/js/main.js"></script>
+  </body>
+</html>
