@@ -1,0 +1,61 @@
+@import "tailwindcss";
+
+/* Explicit content sources — this file has no HTML/JS of its own for
+   Tailwind to scan by proximity, so point it at the actual markup/scripts. */
+@source "../index.html";
+@source "../js/**/*.js";
+
+@theme {
+  --color-background-dark: #0B0F17;
+  --color-surface-slate: #1E293B;
+  --color-accent-gold: #F59E0B;
+  --color-accent-gold-hover: #D97706;
+  --color-status-emerald: #10B981;
+  --color-text-primary: #F8FAFC;
+  --color-text-secondary: #94A3B8;
+  --color-alert-red: #EF4444;
+
+  --font-sans: "Plus Jakarta Sans", "Inter", sans-serif;
+  --font-arabic: "Amiri", "Noto Naskh Arabic", serif;
+}
+
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("/display/fonts/PlusJakartaSans-Regular.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Amiri";
+  font-weight: 400;
+  font-display: swap;
+  src: url("/display/fonts/Amiri-Regular.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Noto Naskh Arabic";
+  font-weight: 400;
+  font-display: swap;
+  src: url("/display/fonts/NotoNaskhArabic-Regular.woff2") format("woff2");
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-background-dark);
+  color: var(--color-text-primary);
+}
+
+.font-arabic {
+  font-family: var(--font-arabic);
+}
+
+/* Slide/state cross-fade — kept as plain CSS rather than a JS-driven
+   animation loop, so the tick loop never has to manage transition timers. */
+.fade {
+  transition: opacity 500ms ease-in-out;
+}
+
+.hidden {
+  display: none !important;
+}

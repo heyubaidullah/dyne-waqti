@@ -12,7 +12,10 @@ import (
 func NewRouter(d *Deps) *http.ServeMux {
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("GET /display", handleDisplayStub)
+	mux.HandleFunc("GET /display", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/display/", http.StatusMovedPermanently)
+	})
+	mux.Handle("GET /display/", displayHandler())
 	mux.HandleFunc("GET /admin", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/admin/", http.StatusMovedPermanently)
 	})

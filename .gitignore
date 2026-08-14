@@ -9,10 +9,14 @@
 .DS_Store
 .claude/
 /web/admin/node_modules/
+/web/display/node_modules/
 
-# Real build output goes here (see internal/api/adminui/embed.go); only the
-# placeholder index.html is tracked so `go build`/`go test` work without
-# Node. `make build-frontend` overwrites it locally with the real app —
-# don't commit that regenerated file back over the placeholder.
+# Real build output goes here (see internal/api/adminui/embed.go and
+# internal/api/displayui/embed.go); only the placeholder index.html is
+# tracked in each so `go build`/`go test` work without Node.
+# `make build-frontend` overwrites them locally with the real apps —
+# don't commit those regenerated files back over the placeholders.
 /internal/api/adminui/dist/*
 !/internal/api/adminui/dist/index.html
+/internal/api/displayui/dist/*
+!/internal/api/displayui/dist/index.html
