@@ -11,6 +11,7 @@ import EmergencyControls from '../components/EmergencyControls.jsx'
 import IqamahTimesForm from '../components/IqamahTimesForm.jsx'
 import SettingsForm from '../components/SettingsForm.jsx'
 import SlideManager from '../components/SlideManager.jsx'
+import LogoUpload from '../components/LogoUpload.jsx'
 
 export default function Dashboard({ onAuthError, onLogout }) {
   const [settings, setSettings] = useState(null)
@@ -80,9 +81,10 @@ export default function Dashboard({ onAuthError, onLogout }) {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-      <Header onLogout={handleLogout} />
+      <Header onLogout={handleLogout} logoUrl={displayData.logo_url} />
       <Container maxWidth="md" sx={{ flex: 1, py: 4 }}>
         <Stack spacing={3}>
+          <LogoUpload logoUrl={displayData.logo_url} runGuarded={runGuarded} />
           <EmergencyControls displayData={displayData} runGuarded={runGuarded} />
           <IqamahTimesForm displayData={displayData} settings={settings} runGuarded={runGuarded} />
           <SettingsForm settings={settings} runGuarded={runGuarded} />

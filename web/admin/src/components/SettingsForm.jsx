@@ -5,9 +5,40 @@ import Stack from '@mui/material/Stack'
 import Grid from '@mui/material/Grid'
 import TextField from '@mui/material/TextField'
 import MenuItem from '@mui/material/MenuItem'
+import Autocomplete from '@mui/material/Autocomplete'
 import Button from '@mui/material/Button'
 import Alert from '@mui/material/Alert'
 import { api } from '../api.js'
+
+// A curated set of common IANA timezones so non-technical staff don't need
+// to know exact zone naming. Not exhaustive — the field stays freeSolo, so
+// any valid IANA name can still be typed directly if a location isn't
+// listed here; the backend (time.LoadLocation) is the real validator.
+const TIMEZONES = [
+  { value: 'America/Los_Angeles', label: 'Pacific Time — Los Angeles' },
+  { value: 'America/Denver', label: 'Mountain Time — Denver' },
+  { value: 'America/Phoenix', label: 'Arizona (no DST) — Phoenix' },
+  { value: 'America/Chicago', label: 'Central Time — Chicago' },
+  { value: 'America/New_York', label: 'Eastern Time — New York' },
+  { value: 'America/Anchorage', label: 'Alaska Time — Anchorage' },
+  { value: 'Pacific/Honolulu', label: 'Hawaii Time (no DST) — Honolulu' },
+  { value: 'America/Toronto', label: 'Eastern Time — Toronto' },
+  { value: 'America/Vancouver', label: 'Pacific Time — Vancouver' },
+  { value: 'America/Regina', label: 'Saskatchewan (no DST) — Regina' },
+  { value: 'Europe/London', label: 'UK Time — London' },
+  { value: 'Europe/Paris', label: 'Central European Time — Paris' },
+  { value: 'Europe/Berlin', label: 'Central European Time — Berlin' },
+  { value: 'Europe/Istanbul', label: 'Turkey Time — Istanbul' },
+  { value: 'Asia/Dubai', label: 'Gulf Time — Dubai' },
+  { value: 'Asia/Riyadh', label: 'Arabia Time — Riyadh' },
+  { value: 'Asia/Karachi', label: 'Pakistan Time — Karachi' },
+  { value: 'Asia/Kolkata', label: 'India Time — Kolkata' },
+  { value: 'Asia/Dhaka', label: 'Bangladesh Time — Dhaka' },
+  { value: 'Asia/Jakarta', label: 'Indonesia Western Time — Jakarta' },
+  { value: 'Asia/Kuala_Lumpur', label: 'Malaysia Time — Kuala Lumpur' },
+  { value: 'Australia/Sydney', label: 'Australia Eastern Time — Sydney' },
+  { value: 'UTC', label: 'UTC (no offset)' },
+]
 
 const CALC_METHODS = [
   ['MWL', 'Muslim World League'],
@@ -63,13 +94,35 @@ export default function SettingsForm({ settings, runGuarded }) {
       <form onSubmit={save}>
         <Grid container spacing={2}>
           <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField
-              label="Timezone (IANA name)"
-              value={form.timezone}
-              onChange={setField('timezone')}
-              placeholder="e.g. America/New_York"
-              size="small"
-              fullWidth
+            <Autocomplete
+              freeSolo
+              options={TIMEZONES}
+              getOptionLabel={(opt) => (typeof opt === 'string' ? opt : opt.label)}
+              inputValue={form.timezone}
+              onInputChange={(e, newInputValue, reason) => {
+                // Only free typing should write straight through — a
+                // dropdown selection fires this too (reason 'reset', with
+                // the friendly label as newInputValue), and onChange below
+                // is the one that should win for that case.
+                if (reason !== 'input') return
+                setForm((f) => ({ ...f, timezone: newInputValue }))
+                setSaved(false)
+              }}
+              onChange={(e, newValue) => {
+                if (newValue && typeof newValue !== 'string') {
+                  setForm((f) => ({ ...f, timezone: newValue.value }))
+                  setSaved(false)
+                }
+              }}
+              renderOption={(props, option) => (
+                <li {...props} key={option.value}>
+                  {option.label}
+                  <span style={{ opacity: 0.6, marginLeft: 8 }}>{option.value}</span>
+                </li>
+              )}
+              renderInput={(params) => (
+                <TextField {...params} label="Timezone" size="small" fullWidth placeholder="e.g. America/Chicago" />
+              )}
             />
           </Grid>
           <Grid size={{ xs: 6, sm: 3 }}>

@@ -58,6 +58,7 @@ type displayDataResponse struct {
 	Slides      []slideView     `json:"slides"`
 	Emergency   *emergencyView  `json:"emergency"`
 	Blackout    bool            `json:"blackout"`
+	LogoURL     string          `json:"logo_url,omitempty"`
 }
 
 func (d *Deps) handleDisplayData(w http.ResponseWriter, r *http.Request) {
@@ -147,5 +148,6 @@ func (d *Deps) handleDisplayData(w http.ResponseWriter, r *http.Request) {
 		Slides:      slideViews,
 		Emergency:   emergency,
 		Blackout:    settings.Blackout,
+		LogoURL:     settings.LogoURL,
 	})
 }
