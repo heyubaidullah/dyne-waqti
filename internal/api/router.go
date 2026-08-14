@@ -13,7 +13,10 @@ func NewRouter(d *Deps) *http.ServeMux {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /display", handleDisplayStub)
-	mux.HandleFunc("GET /admin", handleAdminStub)
+	mux.HandleFunc("GET /admin", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/admin/", http.StatusMovedPermanently)
+	})
+	mux.Handle("GET /admin/", adminHandler())
 	mux.Handle("GET /uploads/", http.StripPrefix("/uploads/", http.FileServer(http.Dir(d.Cfg.UploadsDir))))
 
 	mux.HandleFunc("POST /api/v1/auth/login", d.handleLogin)
