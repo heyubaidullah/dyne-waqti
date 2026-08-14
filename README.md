@@ -90,4 +90,4 @@ inside `internal/calc/vendor_adhan/` and `internal/calc/vendor_hijri/`.
 
 ---
 
-Developed by Ubaidullah Khan at Dyne Labs (c) 2026
+Developed by Ubaidullah Khan at Dyne Labs © 2026
