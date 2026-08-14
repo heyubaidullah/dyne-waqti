@@ -18,11 +18,15 @@ func NewRouter(d *Deps) *http.ServeMux {
 
 	mux.HandleFunc("POST /api/v1/auth/login", d.handleLogin)
 	mux.Handle("POST /api/v1/auth/logout", d.Auth.Middleware(http.HandlerFunc(d.handleLogout)))
+	mux.Handle("GET /api/v1/admin/session", d.Auth.Middleware(http.HandlerFunc(d.handleSessionCheck)))
 
 	mux.HandleFunc("GET /api/v1/display-data", d.handleDisplayData)
 	mux.HandleFunc("GET /api/v1/sse", d.Broadcaster.ServeSSE)
 
+	mux.Handle("GET /api/v1/admin/settings", d.Auth.Middleware(http.HandlerFunc(d.handleGetSettings)))
+	mux.Handle("POST /api/v1/admin/settings", d.Auth.Middleware(http.HandlerFunc(d.handleUpdateSettings)))
 	mux.Handle("POST /api/v1/admin/prayer-times", d.Auth.Middleware(http.HandlerFunc(d.handleUpdatePrayerTimes)))
+	mux.Handle("GET /api/v1/admin/slides", d.Auth.Middleware(http.HandlerFunc(d.handleListAllSlides)))
 	mux.Handle("POST /api/v1/admin/slides", d.Auth.Middleware(http.HandlerFunc(d.handleCreateSlide)))
 	mux.Handle("PATCH /api/v1/admin/slides/{id}", d.Auth.Middleware(http.HandlerFunc(d.handleUpdateSlide)))
 	mux.Handle("DELETE /api/v1/admin/slides/{id}", d.Auth.Middleware(http.HandlerFunc(d.handleDeleteSlide)))
