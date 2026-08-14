@@ -7,8 +7,9 @@ import (
 	"github.com/heyubaidullah/waqti/internal/config"
 )
 
-// Placeholder pages for Phase A, before the real React /admin and vanilla-JS
-// /display frontends (Phase B/C) are embedded via go:embed.
+// Placeholder page for Phase A/B, before the real vanilla-JS /display
+// frontend (Phase C) is embedded via go:embed. /admin is now the real
+// embedded React app — see admin_embed.go.
 
 const stubPageTemplate = `<!doctype html>
 <html><head><title>%s</title></head>
@@ -20,11 +21,5 @@ const stubPageTemplate = `<!doctype html>
 func handleDisplayStub(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	fmt.Fprintf(w, stubPageTemplate, config.DisplayName+" — Display",
-		config.DisplayName, "Phase A backend online. The display UI is not built yet — see GET /api/v1/display-data for live data.")
-}
-
-func handleAdminStub(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	fmt.Fprintf(w, stubPageTemplate, config.DisplayName+" — Admin",
-		config.DisplayName+" Admin", "Phase A backend online. The admin UI is not built yet.")
+		config.DisplayName, "The display UI is not built yet — see GET /api/v1/display-data for live data.")
 }

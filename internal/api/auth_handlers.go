@@ -38,3 +38,10 @@ func (d *Deps) handleLogout(w http.ResponseWriter, r *http.Request) {
 	auth.ClearSessionCookie(w)
 	respondJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
+
+// handleSessionCheck lets the frontend distinguish "logged in" from "not"
+// on load. d.Auth.Middleware already supplies the 401 when the cookie is
+// missing or expired, so a reachable 200 here is the entire contract.
+func (d *Deps) handleSessionCheck(w http.ResponseWriter, r *http.Request) {
+	respondJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+}

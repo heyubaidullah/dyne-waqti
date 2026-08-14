@@ -145,6 +145,36 @@ func (d *Deps) handleBlackout(w http.ResponseWriter, r *http.Request) {
 	respondJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
+// --- GET /api/v1/admin/slides ---
+
+type adminSlideView struct {
+	ID                 int64  `json:"id"`
+	Title              string `json:"title"`
+	Type               string `json:"type"`
+	ContentURLOrText   string `json:"content_url_or_text"`
+	ArabicText         string `json:"arabic_text,omitempty"`
+	IsActive           bool   `json:"is_active"`
+	ExpirationDate     string `json:"expiration_date,omitempty"`
+	DisplayDurationSec int    `json:"display_duration_sec"`
+}
+
+func (d *Deps) handleListAllSlides(w http.ResponseWriter, r *http.Request) {
+	slides, err := db.ListSlides(d.DB, false)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "failed to load slides")
+		return
+	}
+	views := make([]adminSlideView, 0, len(slides))
+	for _, s := range slides {
+		views = append(views, adminSlideView{
+			ID: s.ID, Title: s.Title, Type: s.Type, ContentURLOrText: s.ContentURLOrText,
+			ArabicText: s.ArabicText.String, IsActive: s.IsActive,
+			ExpirationDate: s.ExpirationDate.String, DisplayDurationSec: s.DisplayDurationSec,
+		})
+	}
+	respondJSON(w, http.StatusOK, views)
+}
+
 // --- POST /api/v1/admin/slides (multipart) ---
 
 func (d *Deps) handleCreateSlide(w http.ResponseWriter, r *http.Request) {

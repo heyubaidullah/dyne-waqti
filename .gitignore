@@ -7,5 +7,12 @@
 /waqti.exe
 *.exe
 .DS_Store
+.claude/
 /web/admin/node_modules/
-/web/admin/dist/
+
+# Real build output goes here (see internal/api/adminui/embed.go); only the
+# placeholder index.html is tracked so `go build`/`go test` work without
+# Node. `make build-frontend` overwrites it locally with the real app —
+# don't commit that regenerated file back over the placeholder.
+/internal/api/adminui/dist/*
+!/internal/api/adminui/dist/index.html
