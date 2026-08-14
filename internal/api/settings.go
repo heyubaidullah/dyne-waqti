@@ -23,6 +23,7 @@ const (
 	SettingIqamahAsrMin    = "iqamah_asr_min"
 	SettingIqamahMaghribMin = "iqamah_maghrib_min"
 	SettingIqamahIshaMin   = "iqamah_isha_min"
+	SettingLogoURL         = "logo_url"
 )
 
 // defaultSettings seed a usable-out-of-the-box configuration (UTC, ISNA, 0/0
@@ -43,6 +44,7 @@ var defaultSettings = map[string]string{
 	SettingIqamahAsrMin:     "10",
 	SettingIqamahMaghribMin: "5",
 	SettingIqamahIshaMin:    "10",
+	SettingLogoURL:          "",
 }
 
 // SeedDefaultSettings inserts any missing setting keys with defaults. It
@@ -73,6 +75,7 @@ type DisplaySettings struct {
 	AsrMethod       calc.AsrMethod
 	HijriAdjustDays int
 	Blackout        bool
+	LogoURL         string
 	IqamahOffsets   calc.IqamahOffsets
 }
 
@@ -107,6 +110,7 @@ func loadDisplaySettings(database *sql.DB) (DisplaySettings, error) {
 		AsrMethod:       calc.AsrMethod(get(SettingAsrMethod, string(calc.AsrStandard))),
 		HijriAdjustDays: atoiOr(get(SettingHijriAdjustDays, "0"), 0),
 		Blackout:        get(SettingBlackout, "0") == "1",
+		LogoURL:         get(SettingLogoURL, ""),
 		IqamahOffsets: calc.IqamahOffsets{
 			FajrMin:    atoiOr(get(SettingIqamahFajrMin, "20"), 20),
 			DhuhrMin:   atoiOr(get(SettingIqamahDhuhrMin, "10"), 10),

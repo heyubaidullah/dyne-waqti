@@ -38,6 +38,8 @@ func NewRouter(d *Deps) *http.ServeMux {
 	mux.Handle("DELETE /api/v1/admin/slides/{id}", d.Auth.Middleware(http.HandlerFunc(d.handleDeleteSlide)))
 	mux.Handle("POST /api/v1/admin/janazah", d.Auth.Middleware(http.HandlerFunc(d.handleJanazah)))
 	mux.Handle("POST /api/v1/admin/blackout", d.Auth.Middleware(http.HandlerFunc(d.handleBlackout)))
+	mux.Handle("POST /api/v1/admin/logo", d.Auth.Middleware(http.HandlerFunc(d.handleUploadLogo)))
+	mux.Handle("DELETE /api/v1/admin/logo", d.Auth.Middleware(http.HandlerFunc(d.handleDeleteLogo)))
 
 	return mux
 }
