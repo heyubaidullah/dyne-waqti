@@ -7,6 +7,7 @@ import TextField from '@mui/material/TextField'
 import Button from '@mui/material/Button'
 import Alert from '@mui/material/Alert'
 import { api } from '../api.js'
+import TimeField12h from './TimeField12h.jsx'
 
 const PRAYERS = [
   ['fajr', 'Fajr'],
@@ -24,8 +25,8 @@ export default function IqamahTimesForm({ displayData, settings, runGuarded }) {
   const [error, setError] = useState(null)
   const [saved, setSaved] = useState(false)
 
-  const setField = (key) => (e) => {
-    setTimes({ ...times, [key]: e.target.value })
+  const setTime = (key) => (newValue) => {
+    setTimes({ ...times, [key]: newValue })
     setSaved(false)
   }
 
@@ -47,7 +48,7 @@ export default function IqamahTimesForm({ displayData, settings, runGuarded }) {
       )
       setSaved(true)
     } catch {
-      setError('Failed to save. Times must be in HH:MM (24-hour) format.')
+      setError('Failed to save Iqamah times. Please try again.')
     } finally {
       setBusy(false)
     }
@@ -62,7 +63,7 @@ export default function IqamahTimesForm({ displayData, settings, runGuarded }) {
         <Grid container spacing={2}>
           {PRAYERS.map(([key, label]) => (
             <Grid key={key} size={{ xs: 6, sm: 4 }}>
-              <TextField label={label} value={times[key]} onChange={setField(key)} placeholder="HH:MM" size="small" fullWidth />
+              <TimeField12h label={label} value={times[key]} onChange={setTime(key)} disabled={busy} />
             </Grid>
           ))}
         </Grid>
