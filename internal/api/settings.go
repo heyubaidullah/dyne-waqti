@@ -24,6 +24,7 @@ const (
 	SettingIqamahMaghribMin   = "iqamah_maghrib_min"
 	SettingIqamahIshaMin      = "iqamah_isha_min"
 	SettingLogoURL            = "logo_url"
+	SettingLogoHeightPx       = "logo_height_px"
 	SettingTimingsDurationSec = "timings_duration_sec"
 )
 
@@ -49,6 +50,7 @@ var defaultSettings = map[string]string{
 	SettingIqamahMaghribMin:   "5",
 	SettingIqamahIshaMin:      "10",
 	SettingLogoURL:            "",
+	SettingLogoHeightPx:       "150",
 	SettingTimingsDurationSec: "15",
 }
 
@@ -81,6 +83,7 @@ type DisplaySettings struct {
 	HijriAdjustDays    int
 	Blackout           bool
 	LogoURL            string
+	LogoHeightPx       int
 	TimingsDurationSec int
 	IqamahOffsets      calc.IqamahOffsets
 }
@@ -117,6 +120,7 @@ func loadDisplaySettings(database *sql.DB) (DisplaySettings, error) {
 		HijriAdjustDays:    atoiOr(get(SettingHijriAdjustDays, "0"), 0),
 		Blackout:           get(SettingBlackout, "0") == "1",
 		LogoURL:            get(SettingLogoURL, ""),
+		LogoHeightPx:       atoiOr(get(SettingLogoHeightPx, "150"), 150),
 		TimingsDurationSec: atoiOr(get(SettingTimingsDurationSec, "15"), 15),
 		IqamahOffsets: calc.IqamahOffsets{
 			FajrMin:    atoiOr(get(SettingIqamahFajrMin, "20"), 20),

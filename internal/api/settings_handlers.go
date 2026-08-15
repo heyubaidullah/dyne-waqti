@@ -30,6 +30,7 @@ type settingsPayload struct {
 	IqamahAsrMin       string `json:"iqamah_asr_min"`
 	IqamahMaghribMin   string `json:"iqamah_maghrib_min"`
 	IqamahIshaMin      string `json:"iqamah_isha_min"`
+	LogoHeightPx       string `json:"logo_height_px"`
 	TimingsDurationSec string `json:"timings_duration_sec"`
 }
 
@@ -51,6 +52,7 @@ func (d *Deps) handleGetSettings(w http.ResponseWriter, r *http.Request) {
 		IqamahAsrMin:       strconv.Itoa(s.IqamahOffsets.AsrMin),
 		IqamahMaghribMin:   strconv.Itoa(s.IqamahOffsets.MaghribMin),
 		IqamahIshaMin:      strconv.Itoa(s.IqamahOffsets.IshaMin),
+		LogoHeightPx:       strconv.Itoa(s.LogoHeightPx),
 		TimingsDurationSec: strconv.Itoa(s.TimingsDurationSec),
 	})
 }
@@ -93,6 +95,10 @@ func (d *Deps) handleUpdateSettings(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	if n, err := strconv.Atoi(req.LogoHeightPx); err != nil || n <= 0 {
+		respondError(w, http.StatusBadRequest, "logo_height_px must be a positive integer")
+		return
+	}
 
 	values := map[string]string{
 		SettingTimezone: req.Timezone, SettingLatitude: req.Latitude, SettingLongitude: req.Longitude,
@@ -100,7 +106,7 @@ func (d *Deps) handleUpdateSettings(w http.ResponseWriter, r *http.Request) {
 		SettingHijriAdjustDays: req.HijriAdjustDays, SettingIqamahFajrMin: req.IqamahFajrMin,
 		SettingIqamahDhuhrMin: req.IqamahDhuhrMin, SettingIqamahAsrMin: req.IqamahAsrMin,
 		SettingIqamahMaghribMin: req.IqamahMaghribMin, SettingIqamahIshaMin: req.IqamahIshaMin,
-		SettingTimingsDurationSec: req.TimingsDurationSec,
+		SettingLogoHeightPx: req.LogoHeightPx, SettingTimingsDurationSec: req.TimingsDurationSec,
 	}
 	for key, value := range values {
 		if err := db.SetSetting(d.DB, key, value); err != nil {

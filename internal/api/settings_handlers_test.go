@@ -64,7 +64,8 @@ func TestUpdateSettingsValidatesAndPersists(t *testing.T) {
 		Timezone: "America/New_York", Latitude: "40.7128", Longitude: "-74.0060",
 		CalcMethod: "MWL", AsrMethod: "HANAFI", HijriAdjustDays: "1",
 		IqamahFajrMin: "20", IqamahDhuhrMin: "10", IqamahAsrMin: "10",
-		IqamahMaghribMin: "5", IqamahIshaMin: "10", TimingsDurationSec: "15",
+		IqamahMaghribMin: "5", IqamahIshaMin: "10", LogoHeightPx: "150",
+		TimingsDurationSec: "15",
 	}
 
 	// Invalid timezone is rejected.
@@ -129,7 +130,8 @@ func TestUpdateSettingsRejectsNonIntegerTimingsDuration(t *testing.T) {
 		Timezone: "America/New_York", Latitude: "40.7128", Longitude: "-74.0060",
 		CalcMethod: "MWL", AsrMethod: "HANAFI", HijriAdjustDays: "1",
 		IqamahFajrMin: "20", IqamahDhuhrMin: "10", IqamahAsrMin: "10",
-		IqamahMaghribMin: "5", IqamahIshaMin: "10", TimingsDurationSec: "not-a-number",
+		IqamahMaghribMin: "5", IqamahIshaMin: "10", LogoHeightPx: "150",
+		TimingsDurationSec: "not-a-number",
 	}
 	body, _ := json.Marshal(bad)
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/admin/settings", bytes.NewReader(body))

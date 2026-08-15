@@ -59,6 +59,7 @@ type displayDataResponse struct {
 	Emergency          *emergencyView  `json:"emergency"`
 	Blackout           bool            `json:"blackout"`
 	LogoURL            string          `json:"logo_url,omitempty"`
+	LogoHeightPx       int             `json:"logo_height_px"`
 	TimingsDurationSec int             `json:"timings_duration_sec"`
 }
 
@@ -150,6 +151,7 @@ func (d *Deps) handleDisplayData(w http.ResponseWriter, r *http.Request) {
 		Emergency:          emergency,
 		Blackout:           settings.Blackout,
 		LogoURL:            settings.LogoURL,
+		LogoHeightPx:       settings.LogoHeightPx,
 		TimingsDurationSec: settings.TimingsDurationSec,
 	})
 }
