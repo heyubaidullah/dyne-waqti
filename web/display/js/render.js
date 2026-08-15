@@ -79,6 +79,19 @@ function formatClock(d) {
   });
 }
 
+// "13:12" -> "1:12 PM" — the live clock was already 12h; the prayer-grid
+// Adhan/Iqamah labels come straight from the API as 24h HH:MM and need
+// the same treatment.
+function formatTime12h(hhmm) {
+  const match = /^(\d{1,2}):(\d{2})$/.exec(hhmm || '');
+  if (!match) return hhmm || '';
+  let h = Number(match[1]);
+  const period = h >= 12 ? 'PM' : 'AM';
+  h = h % 12;
+  if (h === 0) h = 12;
+  return `${h}:${match[2]} ${period}`;
+}
+
 function formatCountdown(seconds) {
   const s = Math.max(0, Math.round(seconds));
   const m = Math.floor(s / 60);
@@ -125,10 +138,10 @@ export function updateStaticFields(data) {
   for (const name of PRAYER_ORDER) {
     const col = dom.prayerCols[name];
     if (!col) continue;
-    col.querySelector('.adhan-time').textContent = data.adhan_times[name];
-    col.querySelector('.iqamah-time').textContent = data.iqamah_times[name];
+    col.querySelector('.adhan-time').textContent = formatTime12h(data.adhan_times[name]);
+    col.querySelector('.iqamah-time').textContent = formatTime12h(data.iqamah_times[name]);
   }
   if (dom.prayerCols.jumuah) {
-    dom.prayerCols.jumuah.querySelector('.iqamah-time').textContent = data.iqamah_times.jumuah;
+    dom.prayerCols.jumuah.querySelector('.iqamah-time').textContent = formatTime12h(data.iqamah_times.jumuah);
   }
 }
