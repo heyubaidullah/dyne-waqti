@@ -79,8 +79,8 @@ export default function SettingsForm({ settings, runGuarded }) {
     try {
       await runGuarded(() => api.updateSettings(form))
       setSaved(true)
-    } catch {
-      setError('Failed to save. Check the timezone name and that all numbers are valid.')
+    } catch (err) {
+      setError(err.message || 'Failed to save settings.')
     } finally {
       setBusy(false)
     }
