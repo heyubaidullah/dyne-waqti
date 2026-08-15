@@ -4,6 +4,23 @@ import { PRAYER_ORDER } from './state.js';
 
 const PRAYER_LABELS = { fajr: 'Fajr', dhuhr: 'Dhuhr', asr: 'Asr', maghrib: 'Maghrib', isha: 'Isha' };
 
+// 1-indexed by Hijri month number (index 0 unused) so HIJRI_MONTHS[data.hijri.month] reads directly.
+const HIJRI_MONTHS = [
+  '',
+  'Muharram',
+  'Safar',
+  "Rabi' al-Awwal",
+  "Rabi' al-Thani",
+  'Jumada al-Awwal',
+  'Jumada al-Thani',
+  'Rajab',
+  "Sha'ban",
+  'Ramadan',
+  'Shawwal',
+  "Dhu al-Qi'dah",
+  'Dhu al-Hijjah',
+];
+
 let currentStateName = null;
 // The mosque's configured IANA timezone (from display-data), NOT the kiosk
 // machine's own system timezone — a misconfigured or unset OS timezone on
@@ -139,7 +156,8 @@ export function updateStaticFields(data) {
 
   carousel.setTimingsDuration(data.timings_duration_sec);
 
-  dom.hijriDateEl.textContent = `${data.hijri.day}/${data.hijri.month}/${data.hijri.year} AH`;
+  const hijriMonthName = HIJRI_MONTHS[data.hijri.month] || data.hijri.month;
+  dom.hijriDateEl.textContent = `${data.hijri.day} ${hijriMonthName} ${data.hijri.year} AH`;
   for (const name of PRAYER_ORDER) {
     const col = dom.prayerCols[name];
     if (!col) continue;
