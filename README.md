@@ -149,4 +149,4 @@ inside `internal/calc/vendor_adhan/` and `internal/calc/vendor_hijri/`.
 
 ---
 
-Developed by Ubaidullah Khan at Dyne Labs © 2026
+Developed by Ubaidullah Khan at [Dyne Labs](https://www.dynelabs.org) © 2026
