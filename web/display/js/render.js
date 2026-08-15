@@ -110,7 +110,12 @@ export function tickUpdate(result, now) {
         ? `Next: ${PRAYER_LABELS[result.nextPrayerName]} in ${formatCountdown(result.secondsToIqamah)}`
         : '';
     for (const name of PRAYER_ORDER) {
-      dom.prayerCols[name]?.classList.toggle('text-accent-gold', name === result.nextPrayerName);
+      const isNext = name === result.nextPrayerName;
+      const col = dom.prayerCols[name];
+      col?.classList.toggle('text-accent-gold', isNext);
+      col?.classList.toggle('bg-surface-slate', isNext);
+      col?.classList.toggle('ring-2', isNext);
+      col?.classList.toggle('ring-accent-gold', isNext);
     }
   }
 
