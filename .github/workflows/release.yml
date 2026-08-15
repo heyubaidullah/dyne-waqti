@@ -1,0 +1,39 @@
+name: Release
+
+# Cross-compiles waqti.exe from Linux (make build-windows already does this
+# locally — modernc.org/sqlite is pure Go, so no CGO/Windows toolchain is
+# needed) and attaches it to the GitHub Release for the pushed tag. Pushing
+# a `v*` tag is the only thing that triggers this — it does not run on
+# every commit.
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Build waqti.exe
+        run: make build-windows
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ github.ref_name }}" waqti.exe \
+            --title "${{ github.ref_name }}" \
+            --generate-notes
