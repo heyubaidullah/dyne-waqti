@@ -26,6 +26,14 @@ function to24h(hour12, minute, period) {
   return `${String(h).padStart(2, '0')}:${String(minute).padStart(2, '0')}`
 }
 
+// Read-only 12h display string (e.g. "5:03 AM") for a 24h "HH:MM" value —
+// used wherever a time needs to be *shown* without the full picker, such
+// as the Azaan reference next to each editable Iqamah field.
+export function formatTime12h(hhmm) {
+  const { hour12, minute, period } = from24h(hhmm)
+  return `${hour12}:${String(minute).padStart(2, '0')} ${period}`
+}
+
 // Always renders/edits in 12-hour AM/PM form regardless of the device's
 // browser/OS locale (unlike native <input type="time">, whose 12h vs 24h
 // display isn't controllable from the page) — value/onChange still speak

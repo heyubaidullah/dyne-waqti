@@ -162,6 +162,16 @@ export default function SettingsForm({ settings, runGuarded }) {
           ))}
         </Grid>
 
+        <TextField
+          label="Timings page duration (seconds)"
+          type="number"
+          value={form.timings_duration_sec}
+          onChange={setField('timings_duration_sec')}
+          size="small"
+          sx={{ mt: 2, width: 260 }}
+          helperText="How long the full-screen prayer-times page shows on the display before the next flyer"
+        />
+
         <Stack direction="row" spacing={2} alignItems="center" sx={{ mt: 2 }}>
           <Button type="submit" variant="contained" disabled={busy}>
             Save settings
