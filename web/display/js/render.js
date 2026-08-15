@@ -60,15 +60,17 @@ export function applyState(result, nowMs) {
   if (enteringIdleGroup) {
     if (!wasInIdleGroup) carousel.restart(nowMs);
     dom.logoEl.classList.toggle('hidden', !hasLogo);
+    dom.waqtiLogoEl.classList.remove('hidden');
     if (result.state === 'COUNTDOWN') dom.stateCountdown.classList.remove('hidden');
     return;
   }
 
   // Leaving the idle group entirely — hide both full-screen idle pages
-  // and the logo; the target state's own overlay takes over completely.
+  // and both logos; the target state's own overlay takes over completely.
   dom.idleFlyer.classList.add('hidden');
   dom.idleTimings.classList.add('hidden');
   dom.logoEl.classList.add('hidden');
+  dom.waqtiLogoEl.classList.add('hidden');
 
   switch (result.state) {
     case 'SILENCE':

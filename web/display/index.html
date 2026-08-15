@@ -12,6 +12,12 @@
            the flyer/timings pages (Idle/Countdown only). -->
       <img id="logo" class="hidden absolute top-4 right-4 max-h-20 max-w-56 object-contain z-20 rounded bg-surface-slate/70 p-1" alt="Masjid logo" />
 
+      <!-- Waqti attribution logo (opposite corner from the masjid logo).
+           Ships with its own matching #0B0F17 background baked into the
+           SVG, so no wrapper card is needed. Static — never changes at
+           runtime — but still part of the idle group for visibility. -->
+      <img id="waqti-logo" class="hidden absolute top-4 left-4 max-h-20 object-contain z-20" src="/display/branding/waqti-logo.svg" alt="Waqti" />
+
       <!-- Idle: full-screen flyer phase — one active slide (image or
            text_verse) fills the entire screen for its own duration. -->
       <div id="idle-flyer" class="absolute inset-0">

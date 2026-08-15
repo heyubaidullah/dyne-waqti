@@ -3,6 +3,7 @@
 // this is part of what keeps the 24/7 tick loop allocation-free.
 
 export const logoEl = document.getElementById('logo');
+export const waqtiLogoEl = document.getElementById('waqti-logo');
 export const idleFlyer = document.getElementById('idle-flyer');
 export const carouselSlide = document.getElementById('carousel-slide');
 export const idleTimings = document.getElementById('idle-timings');
