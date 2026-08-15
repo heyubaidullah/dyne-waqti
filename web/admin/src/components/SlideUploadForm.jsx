@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import Stack from '@mui/material/Stack'
+import Typography from '@mui/material/Typography'
 import TextField from '@mui/material/TextField'
 import Button from '@mui/material/Button'
 import Alert from '@mui/material/Alert'
@@ -70,10 +71,15 @@ export default function SlideUploadForm({ runGuarded }) {
         </RadioGroup>
 
         {form.type === 'image' ? (
-          <Button variant="outlined" component="label">
-            {file ? file.name : 'Choose image (PNG/JPEG, max 10MB)'}
-            <input type="file" accept="image/png,image/jpeg" hidden onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
-          </Button>
+          <Stack spacing={0.5} alignItems="flex-start">
+            <Button variant="outlined" component="label">
+              {file ? file.name : 'Choose image (PNG/JPEG, max 10MB)'}
+              <input type="file" accept="image/png,image/jpeg" hidden onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+            </Button>
+            <Typography variant="caption" color="text.secondary">
+              For best results, use a 16:9 image (1920×1080px recommended) — it fills the whole screen when shown.
+            </Typography>
+          </Stack>
         ) : (
           <TextField
             label="Verse / Hadith text"

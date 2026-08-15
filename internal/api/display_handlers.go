@@ -50,15 +50,17 @@ type emergencyView struct {
 }
 
 type displayDataResponse struct {
-	Now         string          `json:"now"`
-	Timezone    string          `json:"timezone"`
-	Hijri       hijriView       `json:"hijri"`
-	AdhanTimes  prayerTimesView `json:"adhan_times"`
-	IqamahTimes iqamahView      `json:"iqamah_times"`
-	Slides      []slideView     `json:"slides"`
-	Emergency   *emergencyView  `json:"emergency"`
-	Blackout    bool            `json:"blackout"`
-	LogoURL     string          `json:"logo_url,omitempty"`
+	Now                string          `json:"now"`
+	Timezone           string          `json:"timezone"`
+	Hijri              hijriView       `json:"hijri"`
+	AdhanTimes         prayerTimesView `json:"adhan_times"`
+	IqamahTimes        iqamahView      `json:"iqamah_times"`
+	Slides             []slideView     `json:"slides"`
+	Emergency          *emergencyView  `json:"emergency"`
+	Blackout           bool            `json:"blackout"`
+	LogoURL            string          `json:"logo_url,omitempty"`
+	LogoHeightPx       int             `json:"logo_height_px"`
+	TimingsDurationSec int             `json:"timings_duration_sec"`
 }
 
 func (d *Deps) handleDisplayData(w http.ResponseWriter, r *http.Request) {
@@ -144,10 +146,12 @@ func (d *Deps) handleDisplayData(w http.ResponseWriter, r *http.Request) {
 			Dhuhr: adhan.Dhuhr.Format("15:04"), Asr: adhan.Asr.Format("15:04"),
 			Maghrib: adhan.Maghrib.Format("15:04"), Isha: adhan.Isha.Format("15:04"),
 		},
-		IqamahTimes: iqamah,
-		Slides:      slideViews,
-		Emergency:   emergency,
-		Blackout:    settings.Blackout,
-		LogoURL:     settings.LogoURL,
+		IqamahTimes:        iqamah,
+		Slides:             slideViews,
+		Emergency:          emergency,
+		Blackout:           settings.Blackout,
+		LogoURL:            settings.LogoURL,
+		LogoHeightPx:       settings.LogoHeightPx,
+		TimingsDurationSec: settings.TimingsDurationSec,
 	})
 }

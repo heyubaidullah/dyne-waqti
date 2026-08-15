@@ -29,6 +29,7 @@ build-display:
 	cp web/display/index.html internal/api/displayui/dist/
 	cp -r web/display/js internal/api/displayui/dist/
 	cp -r web/display/fonts internal/api/displayui/dist/
+	cp -r web/display/branding internal/api/displayui/dist/
 
 test:
 	go test ./...

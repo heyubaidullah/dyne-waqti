@@ -1,0 +1,19 @@
+<svg width="600" height="520" viewBox="0 0 600 520" xmlns="http://www.w3.org/2000/svg" role="img">
+  <title>Waqti stacked logo, light background</title>
+  <desc>Gold crescent icon with two clock hands, with the wordmark WAQTI and a Dyne Labs tagline stacked below, on a white background</desc>
+
+  <rect x="0" y="0" width="600" height="520" fill="#FFFFFF"/>
+
+  <g transform="translate(180,60) scale(0.6)">
+    <rect x="0" y="0" width="400" height="400" rx="88" fill="#0B0F17"/>
+    <circle cx="205" cy="199" r="104" fill="#F59E0B"/>
+    <circle cx="247" cy="167" r="92" fill="#0B0F17"/>
+    <line x1="217" y1="199" x2="269" y2="153" stroke="#F59E0B" stroke-width="10" stroke-linecap="round"/>
+    <line x1="217" y1="199" x2="214" y2="159" stroke="#F59E0B" stroke-width="16" stroke-linecap="round"/>
+    <circle cx="217" cy="199" r="12" fill="#F59E0B"/>
+    <circle cx="269" cy="153" r="9" fill="#10B981"/>
+  </g>
+
+  <text x="300" y="400" text-anchor="middle" font-family="'Plus Jakarta Sans','Poppins','Helvetica Neue',Arial,sans-serif" font-size="84" font-weight="700" letter-spacing="6" fill="#0B0F17">WAQTI</text>
+  <text x="300" y="445" text-anchor="middle" font-family="'Plus Jakarta Sans','Poppins','Helvetica Neue',Arial,sans-serif" font-size="20" font-weight="500" letter-spacing="4" fill="#64748B">BY DYNE LABS</text>
+</svg>

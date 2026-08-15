@@ -1,0 +1,9 @@
+<svg width="500" height="140" viewBox="0 0 500 140" xmlns="http://www.w3.org/2000/svg" role="img">
+  <title>Waqti wordmark, dark background</title>
+  <desc>The text Waqti with a Dyne Labs tagline, no icon, on a dark navy background</desc>
+
+  <rect x="0" y="0" width="500" height="140" fill="#0B0F17"/>
+
+  <text x="30" y="88" font-family="'Plus Jakarta Sans','Poppins','Helvetica Neue',Arial,sans-serif" font-size="64" font-weight="700" fill="#F8FAFC">Waqti</text>
+  <text x="33" y="118" font-family="'Plus Jakarta Sans','Poppins','Helvetica Neue',Arial,sans-serif" font-size="16" font-weight="500" letter-spacing="3" fill="#94A3B8">BY DYNE LABS</text>
+</svg>

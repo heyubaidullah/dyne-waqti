@@ -47,8 +47,11 @@ func TestGetSettingsReturnsDefaults(t *testing.T) {
 	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
 		t.Fatalf("unmarshal: %v", err)
 	}
-	if got.Timezone != "UTC" || got.CalcMethod != "ISNA" {
-		t.Errorf("defaults = %+v, want timezone=UTC calc_method=ISNA", got)
+	if got.Timezone != "America/Chicago" || got.CalcMethod != "ISNA" {
+		t.Errorf("defaults = %+v, want timezone=America/Chicago calc_method=ISNA", got)
+	}
+	if got.TimingsDurationSec != "15" {
+		t.Errorf("TimingsDurationSec default = %q, want %q", got.TimingsDurationSec, "15")
 	}
 }
 
@@ -61,7 +64,8 @@ func TestUpdateSettingsValidatesAndPersists(t *testing.T) {
 		Timezone: "America/New_York", Latitude: "40.7128", Longitude: "-74.0060",
 		CalcMethod: "MWL", AsrMethod: "HANAFI", HijriAdjustDays: "1",
 		IqamahFajrMin: "20", IqamahDhuhrMin: "10", IqamahAsrMin: "10",
-		IqamahMaghribMin: "5", IqamahIshaMin: "10",
+		IqamahMaghribMin: "5", IqamahIshaMin: "10", LogoHeightPx: "150",
+		TimingsDurationSec: "15",
 	}
 
 	// Invalid timezone is rejected.
@@ -111,6 +115,32 @@ func TestUpdateSettingsValidatesAndPersists(t *testing.T) {
 	}
 	if got.Timezone != valid.Timezone || got.CalcMethod != valid.CalcMethod || got.AsrMethod != valid.AsrMethod {
 		t.Errorf("persisted settings = %+v, want %+v", got, valid)
+	}
+	if got.TimingsDurationSec != valid.TimingsDurationSec {
+		t.Errorf("TimingsDurationSec = %q, want %q", got.TimingsDurationSec, valid.TimingsDurationSec)
+	}
+}
+
+func TestUpdateSettingsRejectsNonIntegerTimingsDuration(t *testing.T) {
+	deps := newTestDeps(t)
+	mux := NewRouter(deps)
+	cookie := loginAndGetCookie(t, mux)
+
+	bad := settingsPayload{
+		Timezone: "America/New_York", Latitude: "40.7128", Longitude: "-74.0060",
+		CalcMethod: "MWL", AsrMethod: "HANAFI", HijriAdjustDays: "1",
+		IqamahFajrMin: "20", IqamahDhuhrMin: "10", IqamahAsrMin: "10",
+		IqamahMaghribMin: "5", IqamahIshaMin: "10", LogoHeightPx: "150",
+		TimingsDurationSec: "not-a-number",
+	}
+	body, _ := json.Marshal(bad)
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/admin/settings", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.AddCookie(cookie)
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want 400; body=%s", rec.Code, rec.Body.String())
 	}
 }
 

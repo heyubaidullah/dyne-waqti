@@ -7,7 +7,7 @@ import TextField from '@mui/material/TextField'
 import Button from '@mui/material/Button'
 import Alert from '@mui/material/Alert'
 import { api } from '../api.js'
-import TimeField12h from './TimeField12h.jsx'
+import TimeField12h, { formatTime12h } from './TimeField12h.jsx'
 
 const PRAYERS = [
   ['fajr', 'Fajr'],
@@ -57,13 +57,18 @@ export default function IqamahTimesForm({ displayData, settings, runGuarded }) {
   return (
     <Paper sx={{ p: 3 }} elevation={1}>
       <Typography variant="h6" gutterBottom>
-        Today's Iqamah times
+        Today's prayer times
       </Typography>
       <form onSubmit={save}>
         <Grid container spacing={2}>
           {PRAYERS.map(([key, label]) => (
             <Grid key={key} size={{ xs: 6, sm: 4 }}>
-              <TimeField12h label={label} value={times[key]} onChange={setTime(key)} disabled={busy} />
+              {displayData.adhan_times[key] && (
+                <Typography variant="caption" color="text.secondary" display="block">
+                  Azaan: {formatTime12h(displayData.adhan_times[key])}
+                </Typography>
+              )}
+              <TimeField12h label={`${label} Iqamah`} value={times[key]} onChange={setTime(key)} disabled={busy} />
             </Grid>
           ))}
         </Grid>
