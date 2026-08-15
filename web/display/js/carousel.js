@@ -1,11 +1,15 @@
-import { carouselSlide, idleFlyer, idleTimings } from './dom.js';
+import { carouselSlide, idleFlyer, idleText, textSlideContent, idleTimings } from './dom.js';
 
 let slides = [];
 let currentIndex = 0;
-// 'flyer' | 'timings' — which full-screen page is currently showing while
-// Idle. Countdown freezes whichever of the two was active without
-// switching it (tick() is simply not called with isIdle=true then).
-let phase = 'flyer';
+// 'slide' | 'timings' — 'slide' shows whichever of #idle-flyer (image) or
+// #idle-text (text_verse, with its own persistent banner) matches the
+// current slide's type. Only image slides ever transition to 'timings':
+// a text slide's banner already shows the prayer grid/clock/Hijri date
+// simultaneously, so it never needs the full-screen interlude. Countdown
+// freezes whichever view was active without switching it (tick() is
+// simply not called with isIdle=true then).
+let phase = 'slide';
 let phaseStartedAtMs = null;
 let timingsDurationSec = 15;
 let lastIdsKey = '';
@@ -14,12 +18,13 @@ function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
+function currentSlide() {
+  return slides[currentIndex];
+}
+
 function renderCurrentSlide() {
-  if (slides.length === 0) {
-    carouselSlide.innerHTML = '';
-    return;
-  }
-  const slide = slides[currentIndex];
+  const slide = currentSlide();
+  if (!slide) return;
   if (slide.type === 'image') {
     // object-cover, not contain: a flyer must fill the entire screen
     // edge-to-edge (per spec), cropping as needed — the admin upload form
@@ -29,15 +34,24 @@ function renderCurrentSlide() {
     const arabic = slide.arabic_text
       ? `<p class="font-arabic text-5xl mb-6" dir="rtl" lang="ar">${escapeHtml(slide.arabic_text)}</p>`
       : '';
-    carouselSlide.innerHTML = `${arabic}<p class="text-4xl text-text-primary max-w-5xl leading-relaxed">${escapeHtml(slide.content_url_or_text)}</p>`;
+    textSlideContent.innerHTML = `${arabic}<p class="text-4xl text-text-primary max-w-5xl leading-relaxed">${escapeHtml(slide.content_url_or_text)}</p>`;
   }
 }
 
-function showPhase(nextPhase) {
-  phase = nextPhase;
-  const showFlyer = phase === 'flyer' && slides.length > 0;
-  idleFlyer.classList.toggle('hidden', !showFlyer);
-  idleTimings.classList.toggle('hidden', showFlyer);
+// Shows whichever of #idle-flyer / #idle-text matches the current slide's
+// type and hides the other two idle sub-views.
+function showSlidePhase() {
+  const slide = currentSlide();
+  const isImage = Boolean(slide) && slide.type === 'image';
+  idleFlyer.classList.toggle('hidden', !(slide && isImage));
+  idleText.classList.toggle('hidden', !(slide && !isImage));
+  idleTimings.classList.add('hidden');
+}
+
+function showTimingsPhase() {
+  idleFlyer.classList.add('hidden');
+  idleText.classList.add('hidden');
+  idleTimings.classList.remove('hidden');
 }
 
 // Called on every data refresh (not per tick). Only replaces the slide
@@ -60,17 +74,19 @@ export function setTimingsDuration(sec) {
 
 // Called once, by render.js, whenever the idle group (Idle/Countdown) is
 // (re-)entered from any other state — always restarts the cycle at
-// flyer-phase/slide-0 (or straight to timings if there are no active
-// slides) rather than trying to resume a stale position after an
-// interruption of unknown length.
+// slide-0 (or straight to timings if there are no active slides) rather
+// than trying to resume a stale position after an interruption of
+// unknown length.
 export function restart(nowMs) {
   currentIndex = 0;
   phaseStartedAtMs = nowMs;
   if (slides.length > 0) {
     renderCurrentSlide();
-    showPhase('flyer');
+    phase = 'slide';
+    showSlidePhase();
   } else {
-    showPhase('timings');
+    phase = 'timings';
+    showTimingsPhase();
   }
 }
 
@@ -81,7 +97,10 @@ export function tick(nowMs, isIdle) {
   if (!isIdle) return;
 
   if (slides.length === 0) {
-    if (phase !== 'timings') showPhase('timings');
+    if (phase !== 'timings') {
+      phase = 'timings';
+      showTimingsPhase();
+    }
     return;
   }
   if (phaseStartedAtMs === null) {
@@ -89,17 +108,28 @@ export function tick(nowMs, isIdle) {
     return;
   }
 
-  const durationMs =
-    phase === 'flyer' ? (slides[currentIndex]?.display_duration_sec || 10) * 1000 : timingsDurationSec * 1000;
+  const slide = currentSlide();
+  const isImage = Boolean(slide) && slide.type === 'image';
+  const durationMs = phase === 'slide' ? (slide?.display_duration_sec || 10) * 1000 : timingsDurationSec * 1000;
 
   if (nowMs - phaseStartedAtMs < durationMs) return;
 
-  if (phase === 'flyer') {
-    showPhase('timings');
+  if (phase === 'slide' && isImage) {
+    // Only images get the full-screen timings interlude — a text slide's
+    // banner is already showing the prayer grid, so it advances straight
+    // to the next slide below instead.
+    phase = 'timings';
+    showTimingsPhase();
   } else {
-    currentIndex = (currentIndex + 1) % slides.length;
-    renderCurrentSlide();
-    showPhase('flyer');
+    // Skip the no-op re-render when a single text slide loops back to
+    // itself — its content hasn't changed, so redrawing it would just be
+    // a pointless flicker every cycle.
+    if (slides.length > 1) {
+      currentIndex = (currentIndex + 1) % slides.length;
+      renderCurrentSlide();
+    }
+    phase = 'slide';
+    showSlidePhase();
   }
   phaseStartedAtMs = nowMs;
 }

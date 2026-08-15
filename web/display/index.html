@@ -18,16 +18,66 @@
            runtime — but still part of the idle group for visibility. -->
       <img id="waqti-logo" class="hidden absolute top-4 left-4 max-h-20 object-contain z-20" src="/display/branding/waqti-logo.svg" alt="Waqti" />
 
-      <!-- Idle: full-screen flyer phase — one active slide (image or
-           text_verse) fills the entire screen for its own duration. -->
-      <div id="idle-flyer" class="absolute inset-0">
+      <!-- Idle: full-screen flyer phase — an image slide fills the entire
+           screen for its own duration. Text slides never use this view;
+           they use #idle-text below instead, banner and all. -->
+      <div id="idle-flyer" class="hidden absolute inset-0">
         <div id="carousel-slide" class="fade h-full w-full flex flex-col items-center justify-center px-16 text-center"></div>
       </div>
 
+      <!-- Idle: text-slide phase — a text_verse slide's content fills the
+           upper ~75% of the screen with a persistent prayer-times banner
+           in the lower ~25%, both shown at once (the banner already
+           serves as the "timings page" for text content, so text slides
+           never go through #idle-timings below). -->
+      <div id="idle-text" class="hidden absolute inset-0 flex flex-col">
+        <div id="text-slide-content" class="flex-1 flex flex-col items-center justify-center px-16 text-center overflow-hidden"></div>
+        <div class="h-1/4 min-h-[200px] flex items-center justify-center gap-10 px-8 bg-surface-slate/40 border-t border-white/10">
+          <div class="js-prayer-grid grid grid-cols-6 gap-4 max-w-6xl w-full">
+            <div class="prayer-col text-center rounded-lg px-2 py-1 transition-colors" data-prayer="fajr">
+              <div class="prayer-name text-text-secondary text-sm">Fajr</div>
+              <div class="adhan-time text-text-secondary text-xs"></div>
+              <div class="iqamah-time text-xl font-bold"></div>
+            </div>
+            <div class="prayer-col text-center rounded-lg px-2 py-1 transition-colors" data-prayer="dhuhr">
+              <div class="prayer-name text-text-secondary text-sm">Dhuhr</div>
+              <div class="adhan-time text-text-secondary text-xs"></div>
+              <div class="iqamah-time text-xl font-bold"></div>
+            </div>
+            <div class="prayer-col text-center rounded-lg px-2 py-1 transition-colors" data-prayer="asr">
+              <div class="prayer-name text-text-secondary text-sm">Asr</div>
+              <div class="adhan-time text-text-secondary text-xs"></div>
+              <div class="iqamah-time text-xl font-bold"></div>
+            </div>
+            <div class="prayer-col text-center rounded-lg px-2 py-1 transition-colors" data-prayer="maghrib">
+              <div class="prayer-name text-text-secondary text-sm">Maghrib</div>
+              <div class="adhan-time text-text-secondary text-xs"></div>
+              <div class="iqamah-time text-xl font-bold"></div>
+            </div>
+            <div class="prayer-col text-center rounded-lg px-2 py-1 transition-colors" data-prayer="isha">
+              <div class="prayer-name text-text-secondary text-sm">Isha</div>
+              <div class="adhan-time text-text-secondary text-xs"></div>
+              <div class="iqamah-time text-xl font-bold"></div>
+            </div>
+            <div class="prayer-col text-center rounded-lg px-2 py-1 transition-colors" data-prayer="jumuah">
+              <div class="prayer-name text-text-secondary text-sm">Jumu'ah</div>
+              <div class="adhan-time text-text-secondary text-xs">&nbsp;</div>
+              <div class="iqamah-time text-xl font-bold"></div>
+            </div>
+          </div>
+          <div class="text-center shrink-0">
+            <div class="js-clock text-3xl font-bold text-accent-gold"></div>
+            <div class="js-hijri-date text-sm text-text-secondary mt-1"></div>
+            <div class="js-idle-next-countdown text-xs text-status-emerald mt-1"></div>
+          </div>
+        </div>
+      </div>
+
       <!-- Idle: full-screen timings phase — prayer grid + clock + Hijri
-           date, alternates with the flyer phase above. -->
+           date, shown after an image slide's own duration elapses (and
+           whenever there are no active slides at all). -->
       <div id="idle-timings" class="hidden absolute inset-0 flex flex-col items-center justify-center gap-16 p-12 bg-background-dark">
-        <div id="prayer-grid" class="grid grid-cols-6 gap-6 w-full max-w-7xl">
+        <div class="js-prayer-grid grid grid-cols-6 gap-6 w-full max-w-7xl">
           <div class="prayer-col text-center rounded-xl p-4 transition-colors" data-prayer="fajr">
             <div class="prayer-name text-text-secondary text-xl">Fajr</div>
             <div class="adhan-time text-text-secondary text-base"></div>
@@ -60,9 +110,9 @@
           </div>
         </div>
         <div class="text-center">
-          <div id="clock" class="text-6xl font-bold text-accent-gold"></div>
-          <div id="hijri-date" class="text-2xl text-text-secondary mt-2"></div>
-          <div id="idle-next-countdown" class="text-lg text-status-emerald mt-2"></div>
+          <div class="js-clock text-6xl font-bold text-accent-gold"></div>
+          <div class="js-hijri-date text-2xl text-text-secondary mt-2"></div>
+          <div class="js-idle-next-countdown text-lg text-status-emerald mt-2"></div>
         </div>
       </div>
 

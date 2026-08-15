@@ -65,9 +65,10 @@ export function applyState(result, nowMs) {
     return;
   }
 
-  // Leaving the idle group entirely — hide both full-screen idle pages
-  // and both logos; the target state's own overlay takes over completely.
+  // Leaving the idle group entirely — hide all three idle sub-views and
+  // both logos; the target state's own overlay takes over completely.
   dom.idleFlyer.classList.add('hidden');
+  dom.idleText.classList.add('hidden');
   dom.idleTimings.classList.add('hidden');
   dom.logoEl.classList.add('hidden');
   dom.waqtiLogoEl.classList.add('hidden');
@@ -121,20 +122,23 @@ function formatCountdown(seconds) {
 // Called every second — only touches textContent on already-cached
 // elements, never queries the DOM or allocates persistent objects.
 export function tickUpdate(result, now) {
-  dom.clockEl.textContent = formatClock(now);
+  const clockText = formatClock(now);
+  for (const el of dom.clockEls) el.textContent = clockText;
 
   if (result.state === 'IDLE') {
-    dom.idleNextCountdownEl.textContent =
+    const nextCountdownText =
       result.nextPrayerName && result.secondsToIqamah != null
         ? `Next: ${PRAYER_LABELS[result.nextPrayerName]} in ${formatCountdown(result.secondsToIqamah)}`
         : '';
+    for (const el of dom.idleNextCountdownEls) el.textContent = nextCountdownText;
     for (const name of PRAYER_ORDER) {
       const isNext = name === result.nextPrayerName;
-      const col = dom.prayerCols[name];
-      col?.classList.toggle('text-accent-gold', isNext);
-      col?.classList.toggle('bg-surface-slate', isNext);
-      col?.classList.toggle('ring-2', isNext);
-      col?.classList.toggle('ring-accent-gold', isNext);
+      for (const col of dom.prayerCols[name] || []) {
+        col.classList.toggle('text-accent-gold', isNext);
+        col.classList.toggle('bg-surface-slate', isNext);
+        col.classList.toggle('ring-2', isNext);
+        col.classList.toggle('ring-accent-gold', isNext);
+      }
     }
   }
 
@@ -159,14 +163,15 @@ export function updateStaticFields(data) {
   carousel.setTimingsDuration(data.timings_duration_sec);
 
   const hijriMonthName = HIJRI_MONTHS[data.hijri.month] || data.hijri.month;
-  dom.hijriDateEl.textContent = `${data.hijri.day} ${hijriMonthName} ${data.hijri.year} AH`;
+  const hijriText = `${data.hijri.day} ${hijriMonthName} ${data.hijri.year} AH`;
+  for (const el of dom.hijriDateEls) el.textContent = hijriText;
   for (const name of PRAYER_ORDER) {
-    const col = dom.prayerCols[name];
-    if (!col) continue;
-    col.querySelector('.adhan-time').textContent = formatTime12h(data.adhan_times[name]);
-    col.querySelector('.iqamah-time').textContent = formatTime12h(data.iqamah_times[name]);
+    for (const col of dom.prayerCols[name] || []) {
+      col.querySelector('.adhan-time').textContent = formatTime12h(data.adhan_times[name]);
+      col.querySelector('.iqamah-time').textContent = formatTime12h(data.iqamah_times[name]);
+    }
   }
-  if (dom.prayerCols.jumuah) {
-    dom.prayerCols.jumuah.querySelector('.iqamah-time').textContent = formatTime12h(data.iqamah_times.jumuah);
+  for (const col of dom.prayerCols.jumuah || []) {
+    col.querySelector('.iqamah-time').textContent = formatTime12h(data.iqamah_times.jumuah);
   }
 }
