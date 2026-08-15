@@ -162,15 +162,26 @@ export default function SettingsForm({ settings, runGuarded }) {
           ))}
         </Grid>
 
-        <TextField
-          label="Timings page duration (seconds)"
-          type="number"
-          value={form.timings_duration_sec}
-          onChange={setField('timings_duration_sec')}
-          size="small"
-          sx={{ mt: 2, width: 260 }}
-          helperText="How long the full-screen prayer-times page shows on the display before the next flyer"
-        />
+        <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
+          <TextField
+            label="Masjid logo height (pixels)"
+            type="number"
+            value={form.logo_height_px}
+            onChange={setField('logo_height_px')}
+            size="small"
+            sx={{ width: 260 }}
+            helperText="Controls how big the uploaded logo appears on the display — every logo's natural proportions differ, so there's no fixed size"
+          />
+          <TextField
+            label="Timings page duration (seconds)"
+            type="number"
+            value={form.timings_duration_sec}
+            onChange={setField('timings_duration_sec')}
+            size="small"
+            sx={{ width: 260 }}
+            helperText="How long the full-screen prayer-times page shows after an image flyer (text slides show their own banner instead and skip this page)"
+          />
+        </Stack>
 
         <Stack direction="row" spacing={2} alignItems="center" sx={{ mt: 2 }}>
           <Button type="submit" variant="contained" disabled={busy}>
