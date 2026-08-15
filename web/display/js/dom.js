@@ -3,9 +3,9 @@
 // this is part of what keeps the 24/7 tick loop allocation-free.
 
 export const logoEl = document.getElementById('logo');
-export const carouselViewport = document.getElementById('carousel-viewport');
+export const idleFlyer = document.getElementById('idle-flyer');
 export const carouselSlide = document.getElementById('carousel-slide');
-export const infoBar = document.getElementById('info-bar');
+export const idleTimings = document.getElementById('idle-timings');
 export const clockEl = document.getElementById('clock');
 export const hijriDateEl = document.getElementById('hijri-date');
 export const idleNextCountdownEl = document.getElementById('idle-next-countdown');

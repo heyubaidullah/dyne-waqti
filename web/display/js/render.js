@@ -21,48 +21,46 @@ function hideAllOverlays() {
   dom.stateEmergency.classList.add('hidden');
 }
 
-function isBaseLayerState() {
-  return currentStateName === 'IDLE' || currentStateName === 'COUNTDOWN';
-}
-
-function setBaseLayerVisible(visible) {
-  dom.carouselViewport.classList.toggle('hidden', !visible);
-  dom.infoBar.classList.toggle('hidden', !visible);
-  dom.logoEl.classList.toggle('hidden', !visible || !hasLogo);
+// Idle and Countdown together form the "idle group": Countdown is just a
+// semi-transparent overlay on top of whichever full-screen idle phase
+// (flyer or timings) carousel.js already has showing, frozen in place —
+// it never hides or resets that layer. Only entering/leaving the group
+// as a whole touches the idle layer or the logo.
+function isIdleGroup(stateName) {
+  return stateName === 'IDLE' || stateName === 'COUNTDOWN';
 }
 
 // Called every tick, but only acts when the state actually changed since
 // the last tick — cheap string comparison, no-op on every other call.
 export function applyState(result, nowMs) {
   if (result.state === currentStateName) return;
-  const wasIdle = currentStateName === 'IDLE' || currentStateName === null;
+  const wasInIdleGroup = isIdleGroup(currentStateName);
+  const enteringIdleGroup = isIdleGroup(result.state);
   currentStateName = result.state;
 
   hideAllOverlays();
 
+  if (enteringIdleGroup) {
+    if (!wasInIdleGroup) carousel.restart(nowMs);
+    dom.logoEl.classList.toggle('hidden', !hasLogo);
+    if (result.state === 'COUNTDOWN') dom.stateCountdown.classList.remove('hidden');
+    return;
+  }
+
+  // Leaving the idle group entirely — hide both full-screen idle pages
+  // and the logo; the target state's own overlay takes over completely.
+  dom.idleFlyer.classList.add('hidden');
+  dom.idleTimings.classList.add('hidden');
+  dom.logoEl.classList.add('hidden');
+
   switch (result.state) {
-    case 'IDLE':
-      setBaseLayerVisible(true);
-      dom.infoBar.classList.remove('hidden');
-      carousel.shrink(false);
-      if (!wasIdle) carousel.restart(nowMs);
-      break;
-    case 'COUNTDOWN':
-      setBaseLayerVisible(true);
-      dom.infoBar.classList.add('hidden'); // grid hidden; carousel (shrunk) + countdown take over
-      carousel.shrink(true);
-      dom.stateCountdown.classList.remove('hidden');
-      break;
     case 'SILENCE':
-      setBaseLayerVisible(false);
       dom.stateSilence.classList.remove('hidden');
       break;
     case 'BLACKOUT':
-      setBaseLayerVisible(false);
       dom.stateBlackout.classList.remove('hidden');
       break;
     case 'EMERGENCY':
-      setBaseLayerVisible(false);
       dom.stateEmergency.classList.remove('hidden');
       dom.emergencyNameEl.textContent = result.emergency.deceased_name;
       dom.emergencyTimeEl.textContent = result.emergency.prayer_time;
@@ -119,7 +117,9 @@ export function updateStaticFields(data) {
   if (hasLogo) dom.logoEl.src = data.logo_url;
   // Re-sync immediately rather than waiting for the next state
   // transition — a logo can be uploaded/removed while already Idle.
-  dom.logoEl.classList.toggle('hidden', !hasLogo || !isBaseLayerState());
+  dom.logoEl.classList.toggle('hidden', !hasLogo || !isIdleGroup(currentStateName));
+
+  carousel.setTimingsDuration(data.timings_duration_sec);
 
   dom.hijriDateEl.textContent = `${data.hijri.day}/${data.hijri.month}/${data.hijri.year} AH`;
   for (const name of PRAYER_ORDER) {
