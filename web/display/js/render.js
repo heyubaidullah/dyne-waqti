@@ -156,6 +156,11 @@ export function updateStaticFields(data) {
 
   hasLogo = Boolean(data.logo_url);
   if (hasLogo) dom.logoEl.src = data.logo_url;
+  // Admin-configurable, not a fixed CSS class — every mosque's logo has
+  // different proportions, so this is a real dial, not a fixed Tailwind
+  // step. Width is left to `auto` so the aspect ratio is preserved.
+  dom.logoEl.style.height = `${data.logo_height_px}px`;
+  dom.logoEl.style.width = 'auto';
   // Re-sync immediately rather than waiting for the next state
   // transition — a logo can be uploaded/removed while already Idle.
   dom.logoEl.classList.toggle('hidden', !hasLogo || !isIdleGroup(currentStateName));
