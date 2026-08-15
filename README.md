@@ -27,7 +27,13 @@ automatic). Nothing to install by hand beyond the tools themselves:
 - **`make`** — the build is driven by the `Makefile`. Present by default
   on macOS/Linux. On Windows, either install it (e.g. `choco install
   make`) or run the underlying commands directly — see
-  [Windows setup from scratch](#windows-setup-from-scratch) below.
+  [Building from source (developers)](#building-from-source-developers)
+  below.
+
+None of this applies if you're an end user just running the prebuilt
+`.exe` on Windows — see
+[Just want to run it (mosque staff, IT volunteers)](#just-want-to-run-it-mosque-staff-it-volunteers)
+below instead.
 
 ## Build & run
 
@@ -76,23 +82,36 @@ data is never touched. Every admin write triggers an atomic `VACUUM INTO`
 snapshot to `data/backups/`, plus a safety-net snapshot every 6 hours; the
 most recent 7 backups are retained.
 
-## Windows setup from scratch
+## Getting started on Windows
 
-Two ways to get a working `waqti.exe` on a Windows machine — pick based on
-whether you want the kiosk PC itself to have a dev toolchain on it.
+This repo serves two different audiences — pick the path that matches
+you.
 
-**Option A — cross-compile elsewhere, copy just the binary (recommended
-for the actual kiosk host).** Per the single-binary design, the kiosk PC
-needs nothing but the `.exe` and `data/` next to it — no Go, no Node.
-From any machine that already has this repo built (macOS/Linux/WSL):
-```sh
-make build-windows   # -> ./waqti.exe
-```
-Copy `waqti.exe` (plus `scripts/` if you want the NSSM service installer)
-to the Windows machine and skip straight to "Run the binary" below.
+### Just want to run it (mosque staff, IT volunteers)
 
-**Option B — clone and build directly on Windows** (what you'd do to test
-the full dev loop, or if there's no other machine handy):
+You're on a Windows machine already and just want a working kiosk — no
+Go, Node, Git, or `make` required.
+
+1. Download the latest `waqti.exe` from the
+   [GitHub Releases page](https://github.com/heyubaidullah/dyne-waqti/releases).
+2. Put it in its own folder — it creates a `data/` folder right next to
+   itself on first run (database, uploads, backups all live there).
+3. Double-click `waqti.exe` (or run it from a terminal, if you want to
+   see the console output) to start it.
+4. Open `http://localhost:3000/admin` in a browser to log in — the
+   one-time admin passphrase is printed to the console on first run, the
+   same way it's shown under [Build & run](#build--run) above — and
+   `http://localhost:3000/display` for the kiosk screen itself.
+5. To have it start automatically and run permanently in the background,
+   see
+   [Install as a background service + kiosk launch](#install-as-a-background-service--kiosk-launch)
+   below.
+
+### Building from source (developers)
+
+This path is for forking, modifying, or contributing to Waqti — building
+from source needs the full toolchain.
+
 1. Install [Go 1.22+](https://go.dev/dl/), [Node.js LTS](https://nodejs.org/),
    and [Git](https://git-scm.com/download/win) if not already present.
 2. Install `make` — easiest via [Chocolatey](https://chocolatey.org/):
@@ -110,17 +129,23 @@ the full dev loop, or if there's no other machine handy):
    go build -o waqti.exe .\cmd\server
    ```
 
-**Run the binary:**
-```powershell
-.\waqti.exe
-```
-It prints the one-time admin passphrase to the console and listens on
-`:3000` by default — open `http://localhost:3000/display` and
-`http://localhost:3000/admin` in a browser to confirm it works before
-setting up the kiosk service.
+Building directly on Windows is one option; it's often faster to
+cross-compile from macOS/Linux/WSL instead and just copy the resulting
+`.exe` over — per the single-binary design, the kiosk PC itself needs
+nothing but the `.exe` and `data/` next to it, no Go or Node on it at
+all:
 
-**Install as a background service + kiosk launch** (once you've confirmed
-it runs):
+```sh
+make build-windows   # -> ./waqti.exe, from any host with this repo cloned
+```
+
+Either way, run `.\waqti.exe` once from a terminal first to confirm
+`http://localhost:3000/display` and `http://localhost:3000/admin` both
+work before setting up the kiosk service below.
+
+### Install as a background service + kiosk launch
+
+Once you've confirmed it runs (either path above):
 1. Run `scripts\install-service.bat` as Administrator to register the
    `WaqtiService` background service via [NSSM](https://nssm.cc/) (NSSM
    itself isn't bundled — download it separately and put `nssm.exe` on
@@ -146,6 +171,19 @@ session cookie (issued by `POST /api/v1/auth/login`); `GET
 MIT — see `LICENSE`. Vendored calculation code under `internal/calc/` is
 adapted from third-party MIT-licensed projects; see the `LICENSE` files
 inside `internal/calc/vendor_adhan/` and `internal/calc/vendor_hijri/`.
+
+## Branding
+
+The code is MIT licensed — free to use, modify, and redistribute (see
+[License](#license) above). As a project convention on top of that (not
+a change to the MIT terms themselves), forks and derivatives are asked
+to keep the Waqti logo and attribution visible on the `/display` kiosk
+view and the `/admin` panel rather than stripping it out — it's how the
+project stays identifiable as it spreads to other mosques. The logo
+shown on `/display` lives at `web/display/branding/waqti-logo.svg`; the
+full set of source files for other uses (icons, wordmarks, social
+assets) is in `waqti-brand-assets/` — see that folder's own `README.md`
+for what each file is for.
 
 ---
 
