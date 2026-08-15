@@ -85,10 +85,10 @@ export default function Dashboard({ onAuthError, onLogout }) {
       <Container maxWidth="md" sx={{ flex: 1, py: 4 }}>
         <Stack spacing={3}>
           <LogoUpload logoUrl={displayData.logo_url} runGuarded={runGuarded} />
-          <EmergencyControls displayData={displayData} runGuarded={runGuarded} />
           <IqamahTimesForm displayData={displayData} settings={settings} runGuarded={runGuarded} />
           <SettingsForm settings={settings} runGuarded={runGuarded} />
           <SlideManager slides={slides} runGuarded={runGuarded} />
+          <EmergencyControls displayData={displayData} runGuarded={runGuarded} />
         </Stack>
       </Container>
       <Footer />
