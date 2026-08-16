@@ -12,6 +12,7 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+	_ "time/tzdata" // embed the IANA tz database — Windows ships none of its own, unlike macOS/Linux
 
 	"github.com/heyubaidullah/waqti/internal/api"
 	"github.com/heyubaidullah/waqti/internal/auth"
