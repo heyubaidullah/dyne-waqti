@@ -4,10 +4,11 @@ Offline-first mosque digital signage: a single Go binary serving a 24/7
 `/display` kiosk view (prayer times, Hijri date, flyers, Iqamah countdown,
 Janazah alerts) and a password-protected `/admin` panel for managing it.
 
-**Status: v0.1.0-poc** — backend, the React `/admin` panel, and the
-vanilla-JS `/display` kiosk view are all built, tested, and merged. Not
-yet done: CI/release automation, a live NSSM/Windows-service run on real
-hardware, and a genuine multi-day soak test of `/display`.
+**Status: v1.0.0** — backend, the React `/admin` panel, and the
+vanilla-JS `/display` kiosk view are all built, tested, and merged, with
+CI-driven Windows release builds (see [CHANGELOG.md](CHANGELOG.md)). Not
+yet done: a live NSSM/Windows-service run on real hardware and a genuine
+multi-day soak test of `/display`.
 
 ## Requirements
 
