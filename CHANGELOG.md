@@ -6,6 +6,18 @@ follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-08-16
+
+### Fixed
+
+- `time.LoadLocation` failed with `unknown time zone America/Chicago` (or
+  any other zone) when running the released `waqti.exe` on Windows,
+  even though the same binary worked fine when built and run locally on
+  macOS/Linux. Windows has no system IANA timezone database the way
+  `/usr/share/zoneinfo` provides on macOS/Linux, so the binary now
+  embeds its own copy via a blank `time/tzdata` import (~400KB), which
+  Go uses as an automatic fallback wherever the OS doesn't supply one.
+
 ## [1.0.0] - 2026-08-15
 
 First tagged release. A single Go binary serving an offline-first
