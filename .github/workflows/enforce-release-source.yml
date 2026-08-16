@@ -1,0 +1,28 @@
+name: Enforce release source branch
+
+# Project convention: `release` only ever moves forward by merging `main`
+# into it — never a feature/topic branch directly. This is the required
+# status check that makes that convention mechanically enforced (see
+# CONTRIBUTING.md) rather than just documented: branch protection on
+# `release` requires this check to pass before a PR can be merged, and it
+# only passes when the PR's head branch is exactly `main`.
+on:
+  pull_request:
+    branches:
+      - release
+
+jobs:
+  check-source:
+    name: check-source
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require PR source branch to be main
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          if [ "$HEAD_REF" != "main" ]; then
+            echo "PRs into release must come from main (got '$HEAD_REF')." >&2
+            echo "Merge your work into main first, then open main -> release." >&2
+            exit 1
+          fi
+          echo "OK: PR source is main."
