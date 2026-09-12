@@ -171,7 +171,7 @@ Once you've confirmed it runs (either path above):
 
 ## REST/SSE API
 
-See `mosque-display-agent-prompt.md` for the full endpoint table. All
+See `internal/api/router.go` for the full, always-current route table. All
 `/api/v1/admin/*` endpoints and `POST /api/v1/auth/logout` require a valid
 session cookie (issued by `POST /api/v1/auth/login`); `GET
 /api/v1/display-data` and `GET /api/v1/sse` are public and read-only.
