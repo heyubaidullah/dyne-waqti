@@ -3,7 +3,6 @@
 // this is part of what keeps the 24/7 tick loop allocation-free.
 
 export const logoEl = document.getElementById('logo');
-export const waqtiLogoEl = document.getElementById('waqti-logo');
 export const idleFlyer = document.getElementById('idle-flyer');
 export const carouselSlide = document.getElementById('carousel-slide');
 export const idleText = document.getElementById('idle-text');
@@ -17,7 +16,17 @@ export const idleTimings = document.getElementById('idle-timings');
 // not single elements.
 export const clockEls = document.querySelectorAll('.js-clock');
 export const hijriDateEls = document.querySelectorAll('.js-hijri-date');
+export const gregorianDateEls = document.querySelectorAll('.js-gregorian-date');
+export const weatherEls = document.querySelectorAll('.js-weather');
 export const idleNextCountdownEls = document.querySelectorAll('.js-idle-next-countdown');
+export const prayerGridEls = document.querySelectorAll('.js-prayer-grid');
+
+// Always-visible attribution banner (outside the idle group entirely — see
+// render.js's hideAllOverlays/applyState, which never touch it except to
+// hide it for Blackout).
+export const poweredByBanner = document.getElementById('powered-by-banner');
+export const bannerMasjidLogoEl = document.getElementById('banner-masjid-logo');
+export const bannerMasjidNameEl = document.getElementById('banner-masjid-name');
 
 export const stateCountdown = document.getElementById('state-countdown');
 export const countdownPrayerNameEl = document.getElementById('countdown-prayer-name');

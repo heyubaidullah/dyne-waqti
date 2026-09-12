@@ -1,8 +1,18 @@
 import * as dom from './dom.js';
 import * as carousel from './carousel.js';
-import { PRAYER_ORDER } from './state.js';
+import { PRAYER_ORDER, jummahSlots } from './state.js';
 
 const PRAYER_LABELS = { fajr: 'Fajr', dhuhr: 'Dhuhr', asr: 'Asr', maghrib: 'Maghrib', isha: 'Isha' };
+
+const WEATHER_ICONS = {
+  0: '☀️', 1: '🌤️', 2: '⛅', 3: '☁️',
+  45: '🌫️', 48: '🌫️',
+  51: '🌦️', 53: '🌦️', 55: '🌦️',
+  61: '🌧️', 63: '🌧️', 65: '🌧️',
+  71: '🌨️', 73: '🌨️', 75: '🌨️',
+  80: '🌦️', 81: '🌧️', 82: '⛈️',
+  95: '⛈️', 96: '⛈️', 99: '⛈️',
+};
 
 // 1-indexed by Hijri month number (index 0 unused) so HIJRI_MONTHS[data.hijri.month] reads directly.
 const HIJRI_MONTHS = [
@@ -50,6 +60,11 @@ function isIdleGroup(stateName) {
 // Called every tick, but only acts when the state actually changed since
 // the last tick — cheap string comparison, no-op on every other call.
 export function applyState(result, nowMs) {
+  // The attribution banner lives outside the idle group entirely — it's
+  // always visible except during Blackout, which stays a true blank screen
+  // (its existing, intentional purpose).
+  dom.poweredByBanner.classList.toggle('hidden', result.state === 'BLACKOUT');
+
   if (result.state === currentStateName) return;
   const wasInIdleGroup = isIdleGroup(currentStateName);
   const enteringIdleGroup = isIdleGroup(result.state);
@@ -60,18 +75,16 @@ export function applyState(result, nowMs) {
   if (enteringIdleGroup) {
     if (!wasInIdleGroup) carousel.restart(nowMs);
     dom.logoEl.classList.toggle('hidden', !hasLogo);
-    dom.waqtiLogoEl.classList.remove('hidden');
     if (result.state === 'COUNTDOWN') dom.stateCountdown.classList.remove('hidden');
     return;
   }
 
   // Leaving the idle group entirely — hide all three idle sub-views and
-  // both logos; the target state's own overlay takes over completely.
+  // the masjid logo; the target state's own overlay takes over completely.
   dom.idleFlyer.classList.add('hidden');
   dom.idleText.classList.add('hidden');
   dom.idleTimings.classList.add('hidden');
   dom.logoEl.classList.add('hidden');
-  dom.waqtiLogoEl.classList.add('hidden');
 
   switch (result.state) {
     case 'SILENCE':
@@ -95,6 +108,14 @@ function formatClock(d) {
     minute: '2-digit',
     second: '2-digit',
     hour12: true,
+    timeZone: currentTimezone,
+  });
+}
+
+function formatGregorianDate(nowIso) {
+  const d = new Date(nowIso);
+  return d.toLocaleDateString([], {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
     timeZone: currentTimezone,
   });
 }
@@ -154,6 +175,8 @@ export function tickUpdate(result, now) {
 export function updateStaticFields(data) {
   currentTimezone = data.timezone;
 
+  document.getElementById('app').dataset.fontScale = data.display_font_scale || 'medium';
+
   hasLogo = Boolean(data.logo_url);
   if (hasLogo) dom.logoEl.src = data.logo_url;
   // Admin-configurable, not a fixed CSS class — every mosque's logo has
@@ -170,13 +193,49 @@ export function updateStaticFields(data) {
   const hijriMonthName = HIJRI_MONTHS[data.hijri.month] || data.hijri.month;
   const hijriText = `${data.hijri.day} ${hijriMonthName} ${data.hijri.year} AH`;
   for (const el of dom.hijriDateEls) el.textContent = hijriText;
+
+  const gregorianText = data.show_gregorian_date ? formatGregorianDate(data.now) : '';
+  for (const el of dom.gregorianDateEls) el.textContent = gregorianText;
+
+  for (const el of dom.weatherEls) {
+    if (data.weather) {
+      const icon = WEATHER_ICONS[data.weather.code] || '';
+      el.textContent = `${icon} ${Math.round(data.weather.temp_c)}°C`.trim();
+      el.classList.remove('hidden');
+    } else {
+      el.textContent = '';
+      el.classList.add('hidden');
+    }
+  }
+
   for (const name of PRAYER_ORDER) {
     for (const col of dom.prayerCols[name] || []) {
       col.querySelector('.adhan-time').textContent = formatTime12h(data.adhan_times[name]);
       col.querySelector('.iqamah-time').textContent = formatTime12h(data.iqamah_times[name]);
     }
   }
+
+  const { jumuah, jumuah2 } = jummahSlots(data.jumuah_times);
+  const slots = Array.isArray(data.jumuah_times) ? data.jumuah_times : [];
   for (const col of dom.prayerCols.jumuah || []) {
-    col.querySelector('.iqamah-time').textContent = formatTime12h(data.iqamah_times.jumuah);
+    col.classList.toggle('hidden', !jumuah);
+    if (jumuah) col.querySelector('.iqamah-time').textContent = formatTime12h(slots[0]?.iqamah);
   }
+  for (const col of dom.prayerCols.jumuah2 || []) {
+    col.classList.toggle('hidden', !jumuah2);
+    if (jumuah2) col.querySelector('.iqamah-time').textContent = formatTime12h(slots[1]?.iqamah);
+  }
+  // The grid is 6 columns by default (5 daily prayers + Jumu'ah); widen to
+  // 7 only while a second Jumu'ah slot is actually visible, so there's
+  // never an empty gap where a hidden slot would have been.
+  for (const grid of dom.prayerGridEls) {
+    grid.classList.toggle('grid-cols-7', jumuah2);
+    grid.classList.toggle('grid-cols-6', !jumuah2);
+  }
+
+  dom.bannerMasjidNameEl.classList.toggle('hidden', !data.show_masjid_name || !data.masjid_name);
+  dom.bannerMasjidNameEl.textContent = data.masjid_name || '';
+  const showBannerLogo = Boolean(data.show_masjid_logo_banner && data.logo_url);
+  dom.bannerMasjidLogoEl.classList.toggle('hidden', !showBannerLogo);
+  if (showBannerLogo) dom.bannerMasjidLogoEl.src = data.logo_url;
 }
