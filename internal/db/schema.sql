@@ -28,6 +28,7 @@ CREATE TABLE IF NOT EXISTS slides (
     is_active INTEGER DEFAULT 1,
     expiration_date TEXT,
     display_duration_sec INTEGER DEFAULT 10,
+    display_mode TEXT NOT NULL DEFAULT 'full' CHECK(display_mode IN ('full', 'in_screen')),
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 

@@ -48,6 +48,72 @@ func TestMigrateIsIdempotent(t *testing.T) {
 	}
 }
 
+// TestMigrateAddsDisplayModeColumnToExistingSlides simulates a database
+// created before the `display_mode` column existed (a pre-v0.2 install) and
+// proves Migrate adds it via ALTER TABLE, defaulting existing rows to
+// "full", without touching any other column's data. Also proves running
+// Migrate a second time (already-migrated database) is a safe no-op.
+func TestMigrateAddsDisplayModeColumnToExistingSlides(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "test.db")
+	database, err := Open(path)
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	defer database.Close()
+
+	// Hand-create the pre-v0.2 slides table shape (no display_mode column)
+	// to stand in for a database that predates this release.
+	if _, err := database.Exec(`
+		CREATE TABLE slides (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			title TEXT NOT NULL,
+			type TEXT NOT NULL,
+			content_url_or_text TEXT NOT NULL,
+			arabic_text TEXT,
+			is_active INTEGER DEFAULT 1,
+			expiration_date TEXT,
+			display_duration_sec INTEGER DEFAULT 10,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		)`); err != nil {
+		t.Fatalf("create legacy slides table: %v", err)
+	}
+	if _, err := database.Exec(`
+		INSERT INTO slides (title, type, content_url_or_text, display_duration_sec)
+		VALUES ('Existing Flyer', 'image', '/uploads/old.png', 12)`); err != nil {
+		t.Fatalf("insert legacy row: %v", err)
+	}
+
+	if err := Migrate(database); err != nil {
+		t.Fatalf("Migrate: %v", err)
+	}
+
+	slides, err := ListSlides(database, false)
+	if err != nil {
+		t.Fatalf("ListSlides: %v", err)
+	}
+	if len(slides) != 1 {
+		t.Fatalf("len(slides) = %d, want 1", len(slides))
+	}
+	if slides[0].Title != "Existing Flyer" || slides[0].DisplayDurationSec != 12 {
+		t.Errorf("existing row data corrupted: %+v", slides[0])
+	}
+	if slides[0].DisplayMode != "full" {
+		t.Errorf("DisplayMode = %q, want default %q", slides[0].DisplayMode, "full")
+	}
+
+	// Re-running Migrate must not error (column already exists) or touch data.
+	if err := Migrate(database); err != nil {
+		t.Fatalf("second Migrate: %v", err)
+	}
+	slides, err = ListSlides(database, false)
+	if err != nil {
+		t.Fatalf("ListSlides after second migrate: %v", err)
+	}
+	if len(slides) != 1 || slides[0].DisplayMode != "full" {
+		t.Errorf("slides after second migrate = %+v, want unchanged", slides)
+	}
+}
+
 func TestSettingsRoundTrip(t *testing.T) {
 	database := openTestDB(t)
 
