@@ -123,18 +123,21 @@ export default function SettingsForm({ settings, runGuarded }) {
                   size="small"
                   fullWidth
                   placeholder="e.g. America/Chicago"
-                  InputProps={{
-                    ...params.InputProps,
-                    endAdornment: (
-                      <>
-                        <Tooltip title="Pick the city closest to your masjid. Prayer times are calculated in this timezone, so an incorrect one will make every time on the display wrong." arrow>
-                          <IconButton size="small" sx={{ p: 0.25 }} aria-label="more info about timezone">
-                            <InfoOutlinedIcon fontSize="inherit" />
-                          </IconButton>
-                        </Tooltip>
-                        {params.InputProps.endAdornment}
-                      </>
-                    ),
+                  slotProps={{
+                    ...params.slotProps,
+                    input: {
+                      ...params.slotProps.input,
+                      endAdornment: (
+                        <>
+                          <Tooltip title="Pick the city closest to your masjid. Prayer times are calculated in this timezone, so an incorrect one will make every time on the display wrong." arrow>
+                            <IconButton size="small" sx={{ p: 0.25 }} aria-label="more info about timezone">
+                              <InfoOutlinedIcon fontSize="inherit" />
+                            </IconButton>
+                          </Tooltip>
+                          {params.slotProps.input.endAdornment}
+                        </>
+                      ),
+                    },
                   }}
                 />
               )}
@@ -174,14 +177,16 @@ export default function SettingsForm({ settings, runGuarded }) {
             onChange={setField('hijri_adjust_days')}
             size="small"
             sx={{ width: 260 }}
-            InputProps={{
-              endAdornment: (
-                <Tooltip title="If the Hijri date on the display is a day off from your local moon sighting, use -1 or +1 to correct it." arrow>
-                  <IconButton size="small" sx={{ p: 0.25 }} aria-label="more info about hijri adjustment">
-                    <InfoOutlinedIcon fontSize="inherit" />
-                  </IconButton>
-                </Tooltip>
-              ),
+            slotProps={{
+              input: {
+                endAdornment: (
+                  <Tooltip title="If the Hijri date on the display is a day off from your local moon sighting, use -1 or +1 to correct it." arrow>
+                    <IconButton size="small" sx={{ p: 0.25 }} aria-label="more info about hijri adjustment">
+                      <InfoOutlinedIcon fontSize="inherit" />
+                    </IconButton>
+                  </Tooltip>
+                ),
+              },
             }}
           />
         </Stack>
@@ -194,7 +199,7 @@ export default function SettingsForm({ settings, runGuarded }) {
             onChange={setField('logo_height_px')}
             size="small"
             sx={{ width: 260 }}
-            helperText="Controls how big the uploaded logo appears on the display — every logo's natural proportions differ, so there's no fixed size"
+            helperText="Controls how big the logo appears in the display's footer banner (capped to fit the banner) — every logo's natural proportions differ, so there's no fixed size"
           />
           <TextField
             label="Timings page duration (seconds)"

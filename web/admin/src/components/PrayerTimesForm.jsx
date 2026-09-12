@@ -91,9 +91,7 @@ export default function PrayerTimesForm({ prayerTimes, displayData, runGuarded }
                   size="small"
                   disabled={busy}
                   sx={{ width: 170 }}
-                  InputProps={{
-                    endAdornment: <InfoTip text="Minutes after the calculated prayer time that Azaan is called. Leave at 0 to announce Azaan exactly at the calculated time." />,
-                  }}
+                  slotProps={{ input: { endAdornment: <InfoTip text="Minutes after the calculated prayer time that Azaan is called. Leave at 0 to announce Azaan exactly at the calculated time." /> } }}
                 />
                 <TextField
                   label="Iqamah offset (min)"
@@ -103,9 +101,7 @@ export default function PrayerTimesForm({ prayerTimes, displayData, runGuarded }
                   size="small"
                   disabled={busy}
                   sx={{ width: 170 }}
-                  InputProps={{
-                    endAdornment: <InfoTip text="Minutes after Azaan is called that Iqamah (the second call to start the prayer) is held." />,
-                  }}
+                  slotProps={{ input: { endAdornment: <InfoTip text="Minutes after Azaan is called that Iqamah (the second call to start the prayer) is held." /> } }}
                 />
               </Stack>
             </Grid>
