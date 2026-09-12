@@ -36,7 +36,7 @@ var methodMap = map[Method]vcalc.CalculationMethod{
 type AsrMethod string
 
 const (
-	AsrStandard AsrMethod = "SHAFI" // Shafi/Hanbali/Maliki — shadow length 1x
+	AsrStandard AsrMethod = "SHAFI"  // Shafi/Hanbali/Maliki — shadow length 1x
 	AsrHanafi   AsrMethod = "HANAFI" // Hanafi — shadow length 2x, later Asr
 )
 
@@ -100,9 +100,11 @@ func Calculate(date time.Time, lat, lon float64, tz *time.Location, method Metho
 	}, nil
 }
 
-// IqamahOffsets holds the number of minutes after each Adhan (computed
-// prayer time) that Iqamah is held.
-type IqamahOffsets struct {
+// Offsets holds the number of minutes after a baseline Times each prayer's
+// derived time should land. Used both for Azaan (offset from the raw
+// calculated time) and Iqamah (offset from the, possibly already-offset,
+// Azaan time) — see ApplyOffsets.
+type Offsets struct {
 	FajrMin    int
 	DhuhrMin   int
 	AsrMin     int
@@ -110,8 +112,10 @@ type IqamahOffsets struct {
 	IshaMin    int
 }
 
-// ApplyIqamahOffsets returns the Iqamah times derived from Adhan times t.
-func ApplyIqamahOffsets(t Times, o IqamahOffsets) Times {
+// ApplyOffsets returns times derived from baseline times t, each prayer
+// shifted by its corresponding minute offset in o. Sunrise is never
+// offset — it isn't a prayer, just an informational marker.
+func ApplyOffsets(t Times, o Offsets) Times {
 	return Times{
 		Fajr:    t.Fajr.Add(time.Duration(o.FajrMin) * time.Minute),
 		Sunrise: t.Sunrise,
