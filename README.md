@@ -4,15 +4,15 @@ Offline-first mosque digital signage: a single Go binary serving a 24/7
 `/display` kiosk view (prayer times, Hijri date, flyers, Iqamah countdown,
 Janazah alerts) and a password-protected `/admin` panel for managing it.
 
-**Status: v0.2 (unreleased, on `feature/v0.2-pilot-feedback`)** — v1.0.1
-is the latest tagged release; this branch adds pilot-feedback fixes and
-features on top of it (see [CHANGELOG.md](CHANGELOG.md) for the full
-list): independent Azaan/Iqamah offsets, Jumu'ah 1/2 support, a Display
-Settings panel (font size, Gregorian date, silence-screen duration,
-"Powered by Waqti" attribution banner, opt-in weather), Full Screen/In
-Screen flyer display modes, and an in-admin Help/FAQ page. Not yet done:
-a live NSSM/Windows-service run on real hardware and a genuine multi-day
-soak test of `/display`.
+**Status: v1.1.0** — the pilot-feedback release, built from the first live
+masjid deployment (see [CHANGELOG.md](CHANGELOG.md) for the full list):
+independent Azaan/Iqamah offsets, Jumu'ah 1/2 support, a Display Settings
+panel (font size, Gregorian date, silence-screen duration, "Powered by
+Waqti" attribution banner, opt-in weather in °F or °C), Full Screen/In
+Screen flyer display modes, an in-admin Help/FAQ page, and a
+`--reset-passphrase` recovery flow. Not yet done: a live NSSM/Windows-
+service run on real hardware and a genuine multi-day soak test of
+`/display`.
 
 ## Requirements
 

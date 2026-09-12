@@ -6,6 +6,8 @@ follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-09-12
+
 Pilot-feedback release, built from the first live masjid deployment.
 
 ### Fixed
@@ -23,6 +25,11 @@ Pilot-feedback release, built from the first live masjid deployment.
   tests, plus a Southern Hemisphere DST-transition regression test.
   (The underlying fix — embedding the IANA tzdata database — already
   shipped in 1.0.1; this closes out the investigation with broader proof.)
+- The admin panel could crash to a blank white page on the Location &
+  calculation settings section, caused by a removed MUI API
+  (`InputProps` on `TextField`/`Autocomplete`, replaced by `slotProps`).
+- The Idle screen's "Next prayer in ..." countdown showed raw minutes past
+  60 (e.g. "101:10") instead of rolling over to hours ("1:41:10").
 
 ### Added
 
@@ -36,14 +43,22 @@ Pilot-feedback release, built from the first live masjid deployment.
   large), a toggle for showing the Gregorian date alongside the Hijri
   date, a configurable silence-screen duration after prayer time
   (default 7 minutes, 1-15 minute range), and an opt-in weather display
-  (via Open-Meteo, no API key, fails silently offline).
+  (via Open-Meteo, no API key, fails silently offline, admin-selectable
+  Fahrenheit or Celsius).
 - Always-visible "Powered by Waqti" attribution banner on `/display`,
-  with an independently-toggleable masjid name/logo on the opposite side.
+  redesigned per masjid feedback: masjid name/logo on the left (both
+  independently toggleable, no longer shown separately in the corner),
+  "Powered by Waqti" plus the Waqti mark and "Free and Open Source" on
+  the right (not configurable).
 - Full Screen / In Screen display mode for image flyers — In Screen
   shows the flyer above the persistent prayer-times ribbon instead of
   filling the whole screen.
 - In-admin Help/FAQ page, plus inline tooltips on the timezone and
   Azaan/Iqamah offset fields.
+- `--reset-passphrase` CLI flag (plus `scripts\Reset-Passphrase.bat` on
+  Windows) to recover a lost admin passphrase without touching any other
+  data, and a "Forgot the passphrase?" hint on the login screen pointing
+  to it.
 
 ## [1.0.1] - 2026-08-16
 
