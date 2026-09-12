@@ -47,6 +47,7 @@ export const api = {
   getSettings: () => request('/admin/settings'),
   updateSettings: (settings) => request('/admin/settings', jsonBody(settings)),
 
+  getPrayerTimes: () => request('/admin/prayer-times'),
   updatePrayerTimes: (payload) => request('/admin/prayer-times', jsonBody(payload)),
 
   getDisplaySettings: () => request('/admin/display-settings'),
