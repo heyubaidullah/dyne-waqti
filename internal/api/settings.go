@@ -44,6 +44,7 @@ const (
 	SettingShowMasjidName          = "show_masjid_name"
 	SettingShowMasjidLogoBanner    = "show_masjid_logo_banner"
 	SettingWeatherEnabled          = "weather_enabled"
+	SettingWeatherUnit             = "weather_unit" // "C" or "F"
 )
 
 // defaultSettings seed a usable-out-of-the-box configuration (UTC, ISNA, 0/0
@@ -85,6 +86,7 @@ var defaultSettings = map[string]string{
 	SettingShowMasjidName:          "0",
 	SettingShowMasjidLogoBanner:    "0",
 	SettingWeatherEnabled:          "0",
+	SettingWeatherUnit:             "F",
 }
 
 // SeedDefaultSettings inserts any missing setting keys with defaults. It
@@ -137,6 +139,7 @@ type DisplaySettings struct {
 	ShowMasjidName          bool
 	ShowMasjidLogoBanner    bool
 	WeatherEnabled          bool
+	WeatherUnit             string
 }
 
 func loadDisplaySettings(database *sql.DB) (DisplaySettings, error) {
@@ -202,5 +205,6 @@ func loadDisplaySettings(database *sql.DB) (DisplaySettings, error) {
 		ShowMasjidName:          get(SettingShowMasjidName, "0") == "1",
 		ShowMasjidLogoBanner:    get(SettingShowMasjidLogoBanner, "0") == "1",
 		WeatherEnabled:          get(SettingWeatherEnabled, "0") == "1",
+		WeatherUnit:             get(SettingWeatherUnit, "F"),
 	}, nil
 }

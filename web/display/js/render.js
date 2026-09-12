@@ -200,7 +200,7 @@ export function updateStaticFields(data) {
   for (const el of dom.weatherEls) {
     if (data.weather) {
       const icon = WEATHER_ICONS[data.weather.code] || '';
-      el.textContent = `${icon} ${Math.round(data.weather.temp_c)}°C`.trim();
+      el.textContent = `${icon} ${Math.round(data.weather.temp)}°${data.weather.unit}`.trim();
       el.classList.remove('hidden');
     } else {
       el.textContent = '';

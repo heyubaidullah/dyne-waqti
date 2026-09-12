@@ -27,8 +27,9 @@ var weatherBaseURL = "https://api.open-meteo.com/v1/forecast"
 var weatherHTTPClient = &http.Client{Timeout: 4 * time.Second}
 
 type weatherView struct {
-	TempC float64 `json:"temp_c"`
-	Code  int     `json:"code"`
+	Temp float64 `json:"temp"`
+	Unit string  `json:"unit"` // "C" or "F" — whatever the masjid configured
+	Code int     `json:"code"`
 }
 
 // WeatherCache holds the last successfully fetched reading plus enough
@@ -46,26 +47,31 @@ func NewWeatherCache() *WeatherCache {
 	return &WeatherCache{}
 }
 
-// Current returns the best available weather reading for (lat, lon),
-// kicking off a background refresh if the cache is stale. It never blocks
-// on the network — a cold or expired cache simply returns nil this call and
-// (if a refresh wasn't already in flight) populates itself in time for a
-// later one.
-func (c *WeatherCache) Current(lat, lon float64) *weatherView {
+// Current returns the best available weather reading for (lat, lon) in the
+// requested unit, kicking off a background refresh if the cache is stale
+// or was fetched in a different unit (e.g. the admin just switched
+// Fahrenheit/Celsius). It never blocks on the network — a cold or expired
+// cache simply returns nil this call and (if a refresh wasn't already in
+// flight) populates itself in time for a later one.
+func (c *WeatherCache) Current(lat, lon float64, unit string) *weatherView {
 	c.mu.Lock()
-	needsRefresh := time.Since(c.lastAttempt) >= weatherRefreshInterval && !c.fetching
+	unitChanged := c.lastGood != nil && c.lastGood.Unit != unit
+	needsRefresh := (time.Since(c.lastAttempt) >= weatherRefreshInterval || unitChanged) && !c.fetching
 	if needsRefresh {
 		c.fetching = true
 		c.lastAttempt = time.Now()
 	}
 	var result *weatherView
-	if c.lastGood != nil && time.Since(c.lastGoodAt) < weatherStaleAfter {
+	// A cached reading in the wrong unit is worse than none — never show
+	// e.g. a Celsius value mislabeled as Fahrenheit while the refetch is
+	// still in flight.
+	if c.lastGood != nil && c.lastGood.Unit == unit && time.Since(c.lastGoodAt) < weatherStaleAfter {
 		result = c.lastGood
 	}
 	c.mu.Unlock()
 
 	if needsRefresh {
-		go c.refresh(lat, lon)
+		go c.refresh(lat, lon, unit)
 	}
 	return result
 }
@@ -77,7 +83,7 @@ type openMeteoResponse struct {
 	} `json:"current"`
 }
 
-func (c *WeatherCache) refresh(lat, lon float64) {
+func (c *WeatherCache) refresh(lat, lon float64, unit string) {
 	defer func() {
 		c.mu.Lock()
 		c.fetching = false
@@ -92,6 +98,9 @@ func (c *WeatherCache) refresh(lat, lon float64) {
 	q.Set("latitude", formatCoord(lat))
 	q.Set("longitude", formatCoord(lon))
 	q.Set("current", "temperature_2m,weather_code")
+	if unit == "F" {
+		q.Set("temperature_unit", "fahrenheit")
+	}
 	req.URL.RawQuery = q.Encode()
 
 	resp, err := weatherHTTPClient.Do(req)
@@ -109,7 +118,7 @@ func (c *WeatherCache) refresh(lat, lon float64) {
 	}
 
 	c.mu.Lock()
-	c.lastGood = &weatherView{TempC: parsed.Current.Temperature, Code: parsed.Current.WeatherCode}
+	c.lastGood = &weatherView{Temp: parsed.Current.Temperature, Unit: unit, Code: parsed.Current.WeatherCode}
 	c.lastGoodAt = time.Now()
 	c.mu.Unlock()
 }

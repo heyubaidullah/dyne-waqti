@@ -164,7 +164,7 @@ func (d *Deps) handleDisplayData(w http.ResponseWriter, r *http.Request) {
 
 	var weather *weatherView
 	if settings.WeatherEnabled && d.Weather != nil {
-		weather = d.Weather.Current(settings.Latitude, settings.Longitude)
+		weather = d.Weather.Current(settings.Latitude, settings.Longitude, settings.WeatherUnit)
 	}
 
 	respondJSON(w, http.StatusOK, displayDataResponse{

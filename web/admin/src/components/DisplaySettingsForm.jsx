@@ -113,10 +113,26 @@ export default function DisplaySettingsForm({ displaySettings, runGuarded }) {
             </Typography>
           </Stack>
 
-          <FormControlLabel
-            control={<Switch checked={form.weather_enabled} onChange={setToggle('weather_enabled')} disabled={busy} />}
-            label="Show current weather on the display (uses your masjid's saved location, no internet = simply hidden)"
-          />
+          <Stack spacing={1}>
+            <FormControlLabel
+              control={<Switch checked={form.weather_enabled} onChange={setToggle('weather_enabled')} disabled={busy} />}
+              label="Show current weather on the display (uses your masjid's saved location, no internet = simply hidden)"
+            />
+            {form.weather_enabled && (
+              <TextField
+                select
+                label="Temperature unit"
+                value={form.weather_unit}
+                onChange={setField('weather_unit')}
+                size="small"
+                sx={{ width: 200 }}
+                disabled={busy}
+              >
+                <MenuItem value="F">Fahrenheit (°F)</MenuItem>
+                <MenuItem value="C">Celsius (°C)</MenuItem>
+              </TextField>
+            )}
+          </Stack>
 
           <Stack direction="row" spacing={2} alignItems="center">
             <Button type="submit" variant="contained" disabled={busy}>
