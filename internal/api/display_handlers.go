@@ -27,6 +27,11 @@ type iqamahView struct {
 	Jumuah  string `json:"jumuah"`
 }
 
+type jumuahSlotView struct {
+	Label  string `json:"label"`
+	Iqamah string `json:"iqamah"`
+}
+
 type hijriView struct {
 	Year  int `json:"year"`
 	Month int `json:"month"`
@@ -40,6 +45,7 @@ type slideView struct {
 	ContentURLOrText   string `json:"content_url_or_text"`
 	ArabicText         string `json:"arabic_text,omitempty"`
 	DisplayDurationSec int    `json:"display_duration_sec"`
+	DisplayMode        string `json:"display_mode"`
 }
 
 type emergencyView struct {
@@ -50,17 +56,25 @@ type emergencyView struct {
 }
 
 type displayDataResponse struct {
-	Now                string          `json:"now"`
-	Timezone           string          `json:"timezone"`
-	Hijri              hijriView       `json:"hijri"`
-	AdhanTimes         prayerTimesView `json:"adhan_times"`
-	IqamahTimes        iqamahView      `json:"iqamah_times"`
-	Slides             []slideView     `json:"slides"`
-	Emergency          *emergencyView  `json:"emergency"`
-	Blackout           bool            `json:"blackout"`
-	LogoURL            string          `json:"logo_url,omitempty"`
-	LogoHeightPx       int             `json:"logo_height_px"`
-	TimingsDurationSec int             `json:"timings_duration_sec"`
+	Now                     string           `json:"now"`
+	Timezone                string           `json:"timezone"`
+	Hijri                   hijriView        `json:"hijri"`
+	ShowGregorianDate       bool             `json:"show_gregorian_date"`
+	AdhanTimes              prayerTimesView  `json:"adhan_times"`
+	IqamahTimes             iqamahView       `json:"iqamah_times"`
+	JumuahTimes             []jumuahSlotView `json:"jumuah_times"`
+	Slides                  []slideView      `json:"slides"`
+	Emergency               *emergencyView   `json:"emergency"`
+	Blackout                bool             `json:"blackout"`
+	LogoURL                 string           `json:"logo_url,omitempty"`
+	LogoHeightPx            int              `json:"logo_height_px"`
+	TimingsDurationSec      int              `json:"timings_duration_sec"`
+	DisplayFontScale        string           `json:"display_font_scale"`
+	SilenceDurationAfterMin int              `json:"silence_duration_after_min"`
+	MasjidName              string           `json:"masjid_name,omitempty"`
+	ShowMasjidName          bool             `json:"show_masjid_name"`
+	ShowMasjidLogoBanner    bool             `json:"show_masjid_logo_banner"`
+	Weather                 *weatherView     `json:"weather,omitempty"`
 }
 
 func (d *Deps) handleDisplayData(w http.ResponseWriter, r *http.Request) {
@@ -77,12 +91,31 @@ func (d *Deps) handleDisplayData(w http.ResponseWriter, r *http.Request) {
 	now := time.Now().In(loc)
 	dateStr := now.Format("2006-01-02")
 
-	adhan, err := calc.Calculate(now, settings.Latitude, settings.Longitude, loc, settings.CalcMethod, settings.AsrMethod)
+	calculated, err := calc.Calculate(now, settings.Latitude, settings.Longitude, loc, settings.CalcMethod, settings.AsrMethod)
 	if err != nil {
 		respondError(w, http.StatusInternalServerError, "prayer time calculation failed: "+err.Error())
 		return
 	}
-	computedIqamah := calc.ApplyIqamahOffsets(adhan, settings.IqamahOffsets)
+	// Azaan is offset from the raw calculated time; Iqamah is then offset
+	// from the (possibly already-offset) Azaan time — a masjid's Iqamah is
+	// "N minutes after Azaan is called," not N minutes after the abstract
+	// calculated time. With both offsets defaulting to zero this collapses
+	// to the original calculated-time-based behavior.
+	azaan := calc.ApplyOffsets(calculated, settings.AzaanOffsets)
+	computedIqamah := calc.ApplyOffsets(azaan, settings.IqamahOffsets)
+
+	jumuah1 := settings.Jumuah1Iqamah
+	if jumuah1 == "" {
+		jumuah1 = computedIqamah.Dhuhr.Format("15:04")
+	}
+	jumuahTimes := []jumuahSlotView{{Label: "Jumu'ah", Iqamah: jumuah1}}
+	if settings.JumuahCount == 2 {
+		jumuah2 := settings.Jumuah2Iqamah
+		if jumuah2 == "" {
+			jumuah2 = computedIqamah.Dhuhr.Format("15:04")
+		}
+		jumuahTimes = append(jumuahTimes, jumuahSlotView{Label: "Jumu'ah 2", Iqamah: jumuah2})
+	}
 
 	iqamah := iqamahView{
 		Fajr:    computedIqamah.Fajr.Format("15:04"),
@@ -90,16 +123,7 @@ func (d *Deps) handleDisplayData(w http.ResponseWriter, r *http.Request) {
 		Asr:     computedIqamah.Asr.Format("15:04"),
 		Maghrib: computedIqamah.Maghrib.Format("15:04"),
 		Isha:    computedIqamah.Isha.Format("15:04"),
-		Jumuah:  computedIqamah.Dhuhr.Format("15:04"),
-	}
-	if stored, err := db.GetPrayerSchedule(d.DB, dateStr); err == nil {
-		iqamah = iqamahView{
-			Fajr: stored.FajrIqamah, Dhuhr: stored.DhuhrIqamah, Asr: stored.AsrIqamah,
-			Maghrib: stored.MaghribIqamah, Isha: stored.IshaIqamah, Jumuah: stored.JumuahIqamah,
-		}
-	} else if !errors.Is(err, db.ErrNotFound) {
-		respondError(w, http.StatusInternalServerError, "failed to load prayer schedule")
-		return
+		Jumuah:  jumuah1,
 	}
 
 	hijri, err := calc.GregorianToHijri(now, settings.HijriAdjustDays)
@@ -123,6 +147,7 @@ func (d *Deps) handleDisplayData(w http.ResponseWriter, r *http.Request) {
 		slideViews = append(slideViews, slideView{
 			ID: s.ID, Title: s.Title, Type: s.Type, ContentURLOrText: s.ContentURLOrText,
 			ArabicText: s.ArabicText.String, DisplayDurationSec: s.DisplayDurationSec,
+			DisplayMode: s.DisplayMode,
 		})
 	}
 
@@ -137,21 +162,34 @@ func (d *Deps) handleDisplayData(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var weather *weatherView
+	if settings.WeatherEnabled && d.Weather != nil {
+		weather = d.Weather.Current(settings.Latitude, settings.Longitude)
+	}
+
 	respondJSON(w, http.StatusOK, displayDataResponse{
-		Now:      now.Format(time.RFC3339),
-		Timezone: settings.Timezone,
-		Hijri:    hijriView{Year: hijri.Year, Month: hijri.Month, Day: hijri.Day},
+		Now:               now.Format(time.RFC3339),
+		Timezone:          settings.Timezone,
+		Hijri:             hijriView{Year: hijri.Year, Month: hijri.Month, Day: hijri.Day},
+		ShowGregorianDate: settings.ShowGregorianDate,
 		AdhanTimes: prayerTimesView{
-			Fajr: adhan.Fajr.Format("15:04"), Sunrise: adhan.Sunrise.Format("15:04"),
-			Dhuhr: adhan.Dhuhr.Format("15:04"), Asr: adhan.Asr.Format("15:04"),
-			Maghrib: adhan.Maghrib.Format("15:04"), Isha: adhan.Isha.Format("15:04"),
+			Fajr: azaan.Fajr.Format("15:04"), Sunrise: calculated.Sunrise.Format("15:04"),
+			Dhuhr: azaan.Dhuhr.Format("15:04"), Asr: azaan.Asr.Format("15:04"),
+			Maghrib: azaan.Maghrib.Format("15:04"), Isha: azaan.Isha.Format("15:04"),
 		},
-		IqamahTimes:        iqamah,
-		Slides:             slideViews,
-		Emergency:          emergency,
-		Blackout:           settings.Blackout,
-		LogoURL:            settings.LogoURL,
-		LogoHeightPx:       settings.LogoHeightPx,
-		TimingsDurationSec: settings.TimingsDurationSec,
+		IqamahTimes:             iqamah,
+		JumuahTimes:             jumuahTimes,
+		Slides:                  slideViews,
+		Emergency:               emergency,
+		Blackout:                settings.Blackout,
+		LogoURL:                 settings.LogoURL,
+		LogoHeightPx:            settings.LogoHeightPx,
+		TimingsDurationSec:      settings.TimingsDurationSec,
+		DisplayFontScale:        settings.DisplayFontScale,
+		SilenceDurationAfterMin: settings.SilenceDurationAfterMin,
+		MasjidName:              settings.MasjidName,
+		ShowMasjidName:          settings.ShowMasjidName,
+		ShowMasjidLogoBanner:    settings.ShowMasjidLogoBanner,
+		Weather:                 weather,
 	})
 }

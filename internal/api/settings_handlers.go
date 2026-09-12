@@ -25,11 +25,6 @@ type settingsPayload struct {
 	CalcMethod         string `json:"calc_method"`
 	AsrMethod          string `json:"asr_method"`
 	HijriAdjustDays    string `json:"hijri_adjust_days"`
-	IqamahFajrMin      string `json:"iqamah_fajr_min"`
-	IqamahDhuhrMin     string `json:"iqamah_dhuhr_min"`
-	IqamahAsrMin       string `json:"iqamah_asr_min"`
-	IqamahMaghribMin   string `json:"iqamah_maghrib_min"`
-	IqamahIshaMin      string `json:"iqamah_isha_min"`
 	LogoHeightPx       string `json:"logo_height_px"`
 	TimingsDurationSec string `json:"timings_duration_sec"`
 }
@@ -47,11 +42,6 @@ func (d *Deps) handleGetSettings(w http.ResponseWriter, r *http.Request) {
 		CalcMethod:         string(s.CalcMethod),
 		AsrMethod:          string(s.AsrMethod),
 		HijriAdjustDays:    strconv.Itoa(s.HijriAdjustDays),
-		IqamahFajrMin:      strconv.Itoa(s.IqamahOffsets.FajrMin),
-		IqamahDhuhrMin:     strconv.Itoa(s.IqamahOffsets.DhuhrMin),
-		IqamahAsrMin:       strconv.Itoa(s.IqamahOffsets.AsrMin),
-		IqamahMaghribMin:   strconv.Itoa(s.IqamahOffsets.MaghribMin),
-		IqamahIshaMin:      strconv.Itoa(s.IqamahOffsets.IshaMin),
 		LogoHeightPx:       strconv.Itoa(s.LogoHeightPx),
 		TimingsDurationSec: strconv.Itoa(s.TimingsDurationSec),
 	})
@@ -84,10 +74,7 @@ func (d *Deps) handleUpdateSettings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	intFields := map[string]string{
-		"hijri_adjust_days": req.HijriAdjustDays, "iqamah_fajr_min": req.IqamahFajrMin,
-		"iqamah_dhuhr_min": req.IqamahDhuhrMin, "iqamah_asr_min": req.IqamahAsrMin,
-		"iqamah_maghrib_min": req.IqamahMaghribMin, "iqamah_isha_min": req.IqamahIshaMin,
-		"timings_duration_sec": req.TimingsDurationSec,
+		"hijri_adjust_days": req.HijriAdjustDays, "timings_duration_sec": req.TimingsDurationSec,
 	}
 	for name, v := range intFields {
 		if _, err := strconv.Atoi(v); err != nil {
@@ -103,10 +90,8 @@ func (d *Deps) handleUpdateSettings(w http.ResponseWriter, r *http.Request) {
 	values := map[string]string{
 		SettingTimezone: req.Timezone, SettingLatitude: req.Latitude, SettingLongitude: req.Longitude,
 		SettingCalcMethod: req.CalcMethod, SettingAsrMethod: req.AsrMethod,
-		SettingHijriAdjustDays: req.HijriAdjustDays, SettingIqamahFajrMin: req.IqamahFajrMin,
-		SettingIqamahDhuhrMin: req.IqamahDhuhrMin, SettingIqamahAsrMin: req.IqamahAsrMin,
-		SettingIqamahMaghribMin: req.IqamahMaghribMin, SettingIqamahIshaMin: req.IqamahIshaMin,
-		SettingLogoHeightPx: req.LogoHeightPx, SettingTimingsDurationSec: req.TimingsDurationSec,
+		SettingHijriAdjustDays: req.HijriAdjustDays,
+		SettingLogoHeightPx:    req.LogoHeightPx, SettingTimingsDurationSec: req.TimingsDurationSec,
 	}
 	for key, value := range values {
 		if err := db.SetSetting(d.DB, key, value); err != nil {

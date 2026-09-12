@@ -17,16 +17,25 @@ func isHHMM(s string) bool {
 }
 
 // --- POST /api/v1/admin/prayer-times ---
+//
+// Persistent, offset-based Azaan/Iqamah customization plus Jumu'ah — never
+// date-scoped, so nothing "reverts" the next calendar day (the bug the old
+// per-date prayer_schedules mechanism had).
 
 type prayerTimesRequest struct {
-	Date            string `json:"date,omitempty"` // YYYY-MM-DD, defaults to today
-	FajrIqamah      string `json:"fajr_iqamah"`
-	DhuhrIqamah     string `json:"dhuhr_iqamah"`
-	AsrIqamah       string `json:"asr_iqamah"`
-	MaghribIqamah   string `json:"maghrib_iqamah"`
-	IshaIqamah      string `json:"isha_iqamah"`
-	JumuahIqamah    string `json:"jumuah_iqamah"`
-	HijriAdjustDays *int   `json:"hijri_adjust_days,omitempty"`
+	AzaanFajrMin     string `json:"azaan_fajr_min"`
+	AzaanDhuhrMin    string `json:"azaan_dhuhr_min"`
+	AzaanAsrMin      string `json:"azaan_asr_min"`
+	AzaanMaghribMin  string `json:"azaan_maghrib_min"`
+	AzaanIshaMin     string `json:"azaan_isha_min"`
+	IqamahFajrMin    string `json:"iqamah_fajr_min"`
+	IqamahDhuhrMin   string `json:"iqamah_dhuhr_min"`
+	IqamahAsrMin     string `json:"iqamah_asr_min"`
+	IqamahMaghribMin string `json:"iqamah_maghrib_min"`
+	IqamahIshaMin    string `json:"iqamah_isha_min"`
+	JumuahCount      int    `json:"jumuah_count"`
+	Jumuah1Iqamah    string `json:"jumuah_1_iqamah"` // HH:MM, optional
+	Jumuah2Iqamah    string `json:"jumuah_2_iqamah"` // HH:MM, optional
 }
 
 func (d *Deps) handleUpdatePrayerTimes(w http.ResponseWriter, r *http.Request) {
@@ -35,47 +44,48 @@ func (d *Deps) handleUpdatePrayerTimes(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	for _, v := range []string{req.FajrIqamah, req.DhuhrIqamah, req.AsrIqamah, req.MaghribIqamah, req.IshaIqamah, req.JumuahIqamah} {
-		if !isHHMM(v) {
-			respondError(w, http.StatusBadRequest, "iqamah times must be HH:MM (24h)")
+	minuteFields := map[string]string{
+		"azaan_fajr_min": req.AzaanFajrMin, "azaan_dhuhr_min": req.AzaanDhuhrMin, "azaan_asr_min": req.AzaanAsrMin,
+		"azaan_maghrib_min": req.AzaanMaghribMin, "azaan_isha_min": req.AzaanIshaMin,
+		"iqamah_fajr_min": req.IqamahFajrMin, "iqamah_dhuhr_min": req.IqamahDhuhrMin, "iqamah_asr_min": req.IqamahAsrMin,
+		"iqamah_maghrib_min": req.IqamahMaghribMin, "iqamah_isha_min": req.IqamahIshaMin,
+	}
+	for name, v := range minuteFields {
+		if _, err := strconv.Atoi(v); err != nil {
+			respondError(w, http.StatusBadRequest, name+" must be an integer")
 			return
 		}
 	}
-
-	date := req.Date
-	if date == "" {
-		settings, err := loadDisplaySettings(d.DB)
-		if err != nil {
-			respondError(w, http.StatusInternalServerError, "failed to load settings")
-			return
-		}
-		loc, err := time.LoadLocation(settings.Timezone)
-		if err != nil {
-			loc = time.UTC
-		}
-		date = time.Now().In(loc).Format("2006-01-02")
-	} else if _, err := time.Parse("2006-01-02", date); err != nil {
-		respondError(w, http.StatusBadRequest, "date must be YYYY-MM-DD")
+	if req.JumuahCount != 1 && req.JumuahCount != 2 {
+		respondError(w, http.StatusBadRequest, "jumuah_count must be 1 or 2")
+		return
+	}
+	if req.Jumuah1Iqamah != "" && !isHHMM(req.Jumuah1Iqamah) {
+		respondError(w, http.StatusBadRequest, "jumuah_1_iqamah must be HH:MM (24h) or blank")
+		return
+	}
+	if req.JumuahCount == 2 && req.Jumuah2Iqamah != "" && !isHHMM(req.Jumuah2Iqamah) {
+		respondError(w, http.StatusBadRequest, "jumuah_2_iqamah must be HH:MM (24h) or blank")
 		return
 	}
 
-	if err := db.UpsertPrayerSchedule(d.DB, db.PrayerSchedule{
-		Date: date, FajrIqamah: req.FajrIqamah, DhuhrIqamah: req.DhuhrIqamah, AsrIqamah: req.AsrIqamah,
-		MaghribIqamah: req.MaghribIqamah, IshaIqamah: req.IshaIqamah, JumuahIqamah: req.JumuahIqamah,
-	}); err != nil {
-		respondError(w, http.StatusInternalServerError, "failed to save prayer schedule")
-		return
+	values := map[string]string{
+		SettingAzaanFajrMin: req.AzaanFajrMin, SettingAzaanDhuhrMin: req.AzaanDhuhrMin, SettingAzaanAsrMin: req.AzaanAsrMin,
+		SettingAzaanMaghribMin: req.AzaanMaghribMin, SettingAzaanIshaMin: req.AzaanIshaMin,
+		SettingIqamahFajrMin: req.IqamahFajrMin, SettingIqamahDhuhrMin: req.IqamahDhuhrMin, SettingIqamahAsrMin: req.IqamahAsrMin,
+		SettingIqamahMaghribMin: req.IqamahMaghribMin, SettingIqamahIshaMin: req.IqamahIshaMin,
+		SettingJumuahCount: strconv.Itoa(req.JumuahCount), SettingJumuah1Iqamah: req.Jumuah1Iqamah,
+		SettingJumuah2Iqamah: req.Jumuah2Iqamah,
 	}
-
-	if req.HijriAdjustDays != nil {
-		if err := db.SetSetting(d.DB, SettingHijriAdjustDays, strconv.Itoa(*req.HijriAdjustDays)); err != nil {
-			respondError(w, http.StatusInternalServerError, "failed to save hijri adjustment")
+	for key, value := range values {
+		if err := db.SetSetting(d.DB, key, value); err != nil {
+			respondError(w, http.StatusInternalServerError, "failed to save prayer times")
 			return
 		}
 	}
 
 	d.afterAdminWrite("prayer-times")
-	respondJSON(w, http.StatusOK, map[string]string{"status": "ok", "date": date})
+	respondJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
 // --- POST /api/v1/admin/janazah ---
@@ -235,10 +245,19 @@ func (d *Deps) handleCreateSlide(w http.ResponseWriter, r *http.Request) {
 		expiration = sql.NullString{String: v, Valid: true}
 	}
 
+	displayMode := r.FormValue("display_mode")
+	if displayMode == "" {
+		displayMode = "full"
+	}
+	if displayMode != "full" && displayMode != "in_screen" {
+		respondError(w, http.StatusBadRequest, `display_mode must be "full" or "in_screen"`)
+		return
+	}
+
 	id, err := db.InsertSlide(d.DB, db.Slide{
 		Title: title, Type: slideType, ContentURLOrText: contentURLOrText,
 		ArabicText: sql.NullString{String: r.FormValue("arabic_text"), Valid: r.FormValue("arabic_text") != ""},
-		IsActive: true, ExpirationDate: expiration, DisplayDurationSec: duration,
+		IsActive:   true, ExpirationDate: expiration, DisplayDurationSec: duration, DisplayMode: displayMode,
 	})
 	if err != nil {
 		respondError(w, http.StatusInternalServerError, "failed to save slide")
