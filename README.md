@@ -1,5 +1,7 @@
 # Waqti
 
+**[Website →](https://heyubaidullah.github.io/dyne-waqti/)**
+
 Offline-first mosque digital signage: a single Go binary serving a 24/7
 `/display` kiosk view (prayer times, Hijri date, flyers, Iqamah countdown,
 Janazah alerts) and a password-protected `/admin` panel for managing it.
