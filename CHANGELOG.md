@@ -6,6 +6,63 @@ follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-09-12
+
+Pilot-feedback release, built from the first live masjid deployment.
+
+### Fixed
+
+- Prayer/Iqamah times set from the admin panel could silently revert to
+  uncustomized defaults the next calendar day. The old "Today's prayer
+  times" form saved to a table keyed by the current date, so a masjid's
+  custom times only ever applied to that single day — this looked like
+  "timings changed overnight without anyone touching them." Prayer times
+  are now derived solely from persistent settings on every request, so
+  nothing date-scoped remains to revert.
+- Broadened timezone verification beyond a single US zone: named zones
+  across a wide spread (half-hour offsets, no-DST zones, Southern
+  Hemisphere DST, historically-tricky European zones) are now covered by
+  tests, plus a Southern Hemisphere DST-transition regression test.
+  (The underlying fix — embedding the IANA tzdata database — already
+  shipped in 1.0.1; this closes out the investigation with broader proof.)
+- The admin panel could crash to a blank white page on the Location &
+  calculation settings section, caused by a removed MUI API
+  (`InputProps` on `TextField`/`Autocomplete`, replaced by `slotProps`).
+- The Idle screen's "Next prayer in ..." countdown showed raw minutes past
+  60 (e.g. "101:10") instead of rolling over to hours ("1:41:10").
+
+### Added
+
+- Exact Azaan and Iqamah clock times, set independently per prayer —
+  replaces the old single Iqamah-offset-from-calculated-time model.
+  Non-technical staff type the actual time (e.g. "5:47 AM"), same as
+  reading it off a printed prayer schedule; today's astronomically
+  calculated time is shown alongside as a reference only, never applied
+  automatically. Whatever is saved shows up exactly as entered, every
+  day, until changed again.
+- Jumu'ah 1 / Jumu'ah 2 support — masjids that hold a second Friday
+  prayer can add a second time slot; the display renders one or two rows
+  accordingly.
+- **Display Settings** panel: prayer-timings font size (small/medium/
+  large), a toggle for showing the Gregorian date alongside the Hijri
+  date, a configurable silence-screen duration after prayer time
+  (default 7 minutes, 1-15 minute range), and an opt-in weather display
+  (via Open-Meteo, no API key, fails silently offline, admin-selectable
+  Fahrenheit or Celsius).
+- Always-visible "Powered by Waqti" attribution banner on `/display`,
+  redesigned per masjid feedback: masjid name/logo on the left (both
+  independently toggleable, no longer shown separately in the corner),
+  "Powered by Waqti" plus the Waqti mark and "Free and Open Source" on
+  the right (not configurable).
+- Full Screen / In Screen display mode for image flyers — In Screen
+  shows the flyer above the persistent prayer-times ribbon instead of
+  filling the whole screen.
+- In-admin Help/FAQ page, plus an inline tooltip on the timezone field.
+- `--reset-passphrase` CLI flag (plus `scripts\Reset-Passphrase.bat` on
+  Windows) to recover a lost admin passphrase without touching any other
+  data, and a "Forgot the passphrase?" hint on the login screen pointing
+  to it.
+
 ## [1.0.1] - 2026-08-16
 
 ### Fixed

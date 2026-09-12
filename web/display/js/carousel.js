@@ -22,14 +22,27 @@ function currentSlide() {
   return slides[currentIndex];
 }
 
+// A "Full Screen" image (the default, and the only option before v0.2)
+// fills the entire screen via #idle-flyer. An "In Screen" image behaves
+// like a text_verse slide: it renders inside #idle-text, above the
+// persistent prayer-times ribbon, and never gets the full-screen timings
+// interlude below.
+function isFullScreenImage(slide) {
+  return Boolean(slide) && slide.type === 'image' && slide.display_mode !== 'in_screen';
+}
+
 function renderCurrentSlide() {
   const slide = currentSlide();
   if (!slide) return;
-  if (slide.type === 'image') {
-    // object-cover, not contain: a flyer must fill the entire screen
-    // edge-to-edge (per spec), cropping as needed — the admin upload form
+  if (isFullScreenImage(slide)) {
+    // object-cover, not contain: a full-screen flyer must fill the entire
+    // screen edge-to-edge, cropping as needed — the admin upload form
     // recommends 16:9 source images so cropping is rarely visible.
     carouselSlide.innerHTML = `<img src="${escapeHtml(slide.content_url_or_text)}" alt="${escapeHtml(slide.title)}" class="w-full h-full object-cover" />`;
+  } else if (slide.type === 'image') {
+    // In Screen: object-contain, since this shares the screen with the
+    // timings ribbon rather than filling it — cropping would be wrong here.
+    textSlideContent.innerHTML = `<img src="${escapeHtml(slide.content_url_or_text)}" alt="${escapeHtml(slide.title)}" class="max-w-full max-h-full object-contain" />`;
   } else {
     const arabic = slide.arabic_text
       ? `<p class="font-arabic text-5xl mb-6" dir="rtl" lang="ar">${escapeHtml(slide.arabic_text)}</p>`
@@ -38,13 +51,13 @@ function renderCurrentSlide() {
   }
 }
 
-// Shows whichever of #idle-flyer / #idle-text matches the current slide's
-// type and hides the other two idle sub-views.
+// Shows whichever of #idle-flyer / #idle-text matches the current slide
+// and hides the other two idle sub-views.
 function showSlidePhase() {
   const slide = currentSlide();
-  const isImage = Boolean(slide) && slide.type === 'image';
-  idleFlyer.classList.toggle('hidden', !(slide && isImage));
-  idleText.classList.toggle('hidden', !(slide && !isImage));
+  const fullScreen = isFullScreenImage(slide);
+  idleFlyer.classList.toggle('hidden', !(slide && fullScreen));
+  idleText.classList.toggle('hidden', !(slide && !fullScreen));
   idleTimings.classList.add('hidden');
 }
 
@@ -109,15 +122,15 @@ export function tick(nowMs, isIdle) {
   }
 
   const slide = currentSlide();
-  const isImage = Boolean(slide) && slide.type === 'image';
+  const fullScreen = isFullScreenImage(slide);
   const durationMs = phase === 'slide' ? (slide?.display_duration_sec || 10) * 1000 : timingsDurationSec * 1000;
 
   if (nowMs - phaseStartedAtMs < durationMs) return;
 
-  if (phase === 'slide' && isImage) {
-    // Only images get the full-screen timings interlude — a text slide's
-    // banner is already showing the prayer grid, so it advances straight
-    // to the next slide below instead.
+  if (phase === 'slide' && fullScreen) {
+    // Only Full Screen images get the full-screen timings interlude — a
+    // text slide's (or In Screen image's) banner is already showing the
+    // prayer grid, so it advances straight to the next slide below instead.
     phase = 'timings';
     showTimingsPhase();
   } else {

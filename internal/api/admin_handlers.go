@@ -17,16 +17,75 @@ func isHHMM(s string) bool {
 }
 
 // --- POST /api/v1/admin/prayer-times ---
+//
+// Exact, fixed Azaan/Iqamah clock times plus Jumu'ah — an admin sets the
+// actual time, period, rather than an offset from a calculated time. This
+// is also what fixed the pilot's "timings changed overnight" bug: these
+// are persistent settings (never date-scoped), so nothing can revert them
+// the next calendar day the way the old per-date prayer_schedules table did.
 
 type prayerTimesRequest struct {
-	Date            string `json:"date,omitempty"` // YYYY-MM-DD, defaults to today
-	FajrIqamah      string `json:"fajr_iqamah"`
-	DhuhrIqamah     string `json:"dhuhr_iqamah"`
-	AsrIqamah       string `json:"asr_iqamah"`
-	MaghribIqamah   string `json:"maghrib_iqamah"`
-	IshaIqamah      string `json:"isha_iqamah"`
-	JumuahIqamah    string `json:"jumuah_iqamah"`
-	HijriAdjustDays *int   `json:"hijri_adjust_days,omitempty"`
+	AzaanFajrTime   string `json:"azaan_fajr_time"`
+	AzaanDhuhrTime  string `json:"azaan_dhuhr_time"`
+	AzaanAsrTime    string `json:"azaan_asr_time"`
+	AzaanIshaTime   string `json:"azaan_isha_time"`
+	IqamahFajrTime  string `json:"iqamah_fajr_time"`
+	IqamahDhuhrTime string `json:"iqamah_dhuhr_time"`
+	IqamahAsrTime   string `json:"iqamah_asr_time"`
+	IqamahIshaTime  string `json:"iqamah_isha_time"`
+	// Maghrib Azaan always tracks the calculated sunset time automatically
+	// (sunset moves too much day to day for a fixed clock time) — only the
+	// Iqamah delay after it is admin-configurable.
+	IqamahMaghribOffsetMin string `json:"iqamah_maghrib_offset_min"`
+	JumuahCount            int    `json:"jumuah_count"`
+	Jumuah1Iqamah          string `json:"jumuah_1_iqamah"` // HH:MM, optional
+	Jumuah2Iqamah          string `json:"jumuah_2_iqamah"` // HH:MM, optional
+}
+
+const (
+	minIqamahMaghribOffsetMin = 0
+	maxIqamahMaghribOffsetMin = 30
+)
+
+// prayerTimesResponse adds a read-only "what the calculator says for today"
+// reference alongside the admin's fixed times — helps them pick sensible
+// values without the app ever silently substituting the calculated time.
+// MaghribAzaan/MaghribIqamah are the resolved (not admin-editable) times
+// for the one prayer that isn't a fixed clock time.
+type prayerTimesResponse struct {
+	prayerTimesRequest
+	Calculated    *prayerTimesView `json:"calculated,omitempty"`
+	MaghribAzaan  string           `json:"maghrib_azaan,omitempty"`
+	MaghribIqamah string           `json:"maghrib_iqamah,omitempty"`
+}
+
+func (d *Deps) handleGetPrayerTimes(w http.ResponseWriter, r *http.Request) {
+	s, err := loadDisplaySettings(d.DB)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "failed to load settings")
+		return
+	}
+
+	resp := prayerTimesResponse{
+		prayerTimesRequest: prayerTimesRequest{
+			AzaanFajrTime: s.AzaanTimes.Fajr, AzaanDhuhrTime: s.AzaanTimes.Dhuhr, AzaanAsrTime: s.AzaanTimes.Asr,
+			AzaanIshaTime:  s.AzaanTimes.Isha,
+			IqamahFajrTime: s.IqamahTimes.Fajr, IqamahDhuhrTime: s.IqamahTimes.Dhuhr, IqamahAsrTime: s.IqamahTimes.Asr,
+			IqamahIshaTime:         s.IqamahTimes.Isha,
+			IqamahMaghribOffsetMin: strconv.Itoa(s.IqamahMaghribOffsetMin),
+			JumuahCount:            s.JumuahCount, Jumuah1Iqamah: s.Jumuah1Iqamah, Jumuah2Iqamah: s.Jumuah2Iqamah,
+		},
+	}
+	if calculated, err := currentCalculatedTimes(s); err == nil {
+		resp.Calculated = &prayerTimesView{
+			Fajr: calculated.Fajr.Format("15:04"), Sunrise: calculated.Sunrise.Format("15:04"),
+			Dhuhr: calculated.Dhuhr.Format("15:04"), Asr: calculated.Asr.Format("15:04"),
+			Maghrib: calculated.Maghrib.Format("15:04"), Isha: calculated.Isha.Format("15:04"),
+		}
+		resp.MaghribAzaan = calculated.Maghrib.Format("15:04")
+		resp.MaghribIqamah = calculated.Maghrib.Add(time.Duration(s.IqamahMaghribOffsetMin) * time.Minute).Format("15:04")
+	}
+	respondJSON(w, http.StatusOK, resp)
 }
 
 func (d *Deps) handleUpdatePrayerTimes(w http.ResponseWriter, r *http.Request) {
@@ -35,47 +94,54 @@ func (d *Deps) handleUpdatePrayerTimes(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	for _, v := range []string{req.FajrIqamah, req.DhuhrIqamah, req.AsrIqamah, req.MaghribIqamah, req.IshaIqamah, req.JumuahIqamah} {
+	timeFields := map[string]string{
+		"azaan_fajr_time": req.AzaanFajrTime, "azaan_dhuhr_time": req.AzaanDhuhrTime, "azaan_asr_time": req.AzaanAsrTime,
+		"azaan_isha_time":  req.AzaanIshaTime,
+		"iqamah_fajr_time": req.IqamahFajrTime, "iqamah_dhuhr_time": req.IqamahDhuhrTime, "iqamah_asr_time": req.IqamahAsrTime,
+		"iqamah_isha_time": req.IqamahIshaTime,
+	}
+	for name, v := range timeFields {
 		if !isHHMM(v) {
-			respondError(w, http.StatusBadRequest, "iqamah times must be HH:MM (24h)")
+			respondError(w, http.StatusBadRequest, name+" must be HH:MM (24h)")
 			return
 		}
 	}
-
-	date := req.Date
-	if date == "" {
-		settings, err := loadDisplaySettings(d.DB)
-		if err != nil {
-			respondError(w, http.StatusInternalServerError, "failed to load settings")
-			return
-		}
-		loc, err := time.LoadLocation(settings.Timezone)
-		if err != nil {
-			loc = time.UTC
-		}
-		date = time.Now().In(loc).Format("2006-01-02")
-	} else if _, err := time.Parse("2006-01-02", date); err != nil {
-		respondError(w, http.StatusBadRequest, "date must be YYYY-MM-DD")
+	maghribOffset, err := strconv.Atoi(req.IqamahMaghribOffsetMin)
+	if err != nil || maghribOffset < minIqamahMaghribOffsetMin || maghribOffset > maxIqamahMaghribOffsetMin {
+		respondError(w, http.StatusBadRequest, "iqamah_maghrib_offset_min must be an integer between 0 and 30")
+		return
+	}
+	if req.JumuahCount != 1 && req.JumuahCount != 2 {
+		respondError(w, http.StatusBadRequest, "jumuah_count must be 1 or 2")
+		return
+	}
+	if req.Jumuah1Iqamah != "" && !isHHMM(req.Jumuah1Iqamah) {
+		respondError(w, http.StatusBadRequest, "jumuah_1_iqamah must be HH:MM (24h) or blank")
+		return
+	}
+	if req.JumuahCount == 2 && req.Jumuah2Iqamah != "" && !isHHMM(req.Jumuah2Iqamah) {
+		respondError(w, http.StatusBadRequest, "jumuah_2_iqamah must be HH:MM (24h) or blank")
 		return
 	}
 
-	if err := db.UpsertPrayerSchedule(d.DB, db.PrayerSchedule{
-		Date: date, FajrIqamah: req.FajrIqamah, DhuhrIqamah: req.DhuhrIqamah, AsrIqamah: req.AsrIqamah,
-		MaghribIqamah: req.MaghribIqamah, IshaIqamah: req.IshaIqamah, JumuahIqamah: req.JumuahIqamah,
-	}); err != nil {
-		respondError(w, http.StatusInternalServerError, "failed to save prayer schedule")
-		return
+	values := map[string]string{
+		SettingAzaanFajrTime: req.AzaanFajrTime, SettingAzaanDhuhrTime: req.AzaanDhuhrTime, SettingAzaanAsrTime: req.AzaanAsrTime,
+		SettingAzaanIshaTime:  req.AzaanIshaTime,
+		SettingIqamahFajrTime: req.IqamahFajrTime, SettingIqamahDhuhrTime: req.IqamahDhuhrTime, SettingIqamahAsrTime: req.IqamahAsrTime,
+		SettingIqamahIshaTime:         req.IqamahIshaTime,
+		SettingIqamahMaghribOffsetMin: req.IqamahMaghribOffsetMin,
+		SettingJumuahCount:            strconv.Itoa(req.JumuahCount), SettingJumuah1Iqamah: req.Jumuah1Iqamah,
+		SettingJumuah2Iqamah: req.Jumuah2Iqamah,
 	}
-
-	if req.HijriAdjustDays != nil {
-		if err := db.SetSetting(d.DB, SettingHijriAdjustDays, strconv.Itoa(*req.HijriAdjustDays)); err != nil {
-			respondError(w, http.StatusInternalServerError, "failed to save hijri adjustment")
+	for key, value := range values {
+		if err := db.SetSetting(d.DB, key, value); err != nil {
+			respondError(w, http.StatusInternalServerError, "failed to save prayer times")
 			return
 		}
 	}
 
 	d.afterAdminWrite("prayer-times")
-	respondJSON(w, http.StatusOK, map[string]string{"status": "ok", "date": date})
+	respondJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
 // --- POST /api/v1/admin/janazah ---
@@ -156,6 +222,7 @@ type adminSlideView struct {
 	IsActive           bool   `json:"is_active"`
 	ExpirationDate     string `json:"expiration_date,omitempty"`
 	DisplayDurationSec int    `json:"display_duration_sec"`
+	DisplayMode        string `json:"display_mode"`
 }
 
 func (d *Deps) handleListAllSlides(w http.ResponseWriter, r *http.Request) {
@@ -170,6 +237,7 @@ func (d *Deps) handleListAllSlides(w http.ResponseWriter, r *http.Request) {
 			ID: s.ID, Title: s.Title, Type: s.Type, ContentURLOrText: s.ContentURLOrText,
 			ArabicText: s.ArabicText.String, IsActive: s.IsActive,
 			ExpirationDate: s.ExpirationDate.String, DisplayDurationSec: s.DisplayDurationSec,
+			DisplayMode: s.DisplayMode,
 		})
 	}
 	respondJSON(w, http.StatusOK, views)
@@ -235,10 +303,19 @@ func (d *Deps) handleCreateSlide(w http.ResponseWriter, r *http.Request) {
 		expiration = sql.NullString{String: v, Valid: true}
 	}
 
+	displayMode := r.FormValue("display_mode")
+	if displayMode == "" {
+		displayMode = "full"
+	}
+	if displayMode != "full" && displayMode != "in_screen" {
+		respondError(w, http.StatusBadRequest, `display_mode must be "full" or "in_screen"`)
+		return
+	}
+
 	id, err := db.InsertSlide(d.DB, db.Slide{
 		Title: title, Type: slideType, ContentURLOrText: contentURLOrText,
 		ArabicText: sql.NullString{String: r.FormValue("arabic_text"), Valid: r.FormValue("arabic_text") != ""},
-		IsActive: true, ExpirationDate: expiration, DisplayDurationSec: duration,
+		IsActive:   true, ExpirationDate: expiration, DisplayDurationSec: duration, DisplayMode: displayMode,
 	})
 	if err != nil {
 		respondError(w, http.StatusInternalServerError, "failed to save slide")

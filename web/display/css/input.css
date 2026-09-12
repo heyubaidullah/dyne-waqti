@@ -59,3 +59,22 @@ body {
 .hidden {
   display: none !important;
 }
+
+/* Prayer timings font size (Display Settings, admin-configurable). Scales
+   the Iqamah/Azaan times and the live clock via transform rather than
+   redeclaring font-size per view (the same three classes are used at
+   different base sizes in the compact banner vs. the full-screen timings
+   page) — "medium" is the unscaled default, so no rule is needed for it. */
+#app[data-font-scale="small"] .iqamah-time,
+#app[data-font-scale="small"] .adhan-time,
+#app[data-font-scale="small"] .js-clock {
+  transform: scale(0.85);
+  transform-origin: center;
+}
+
+#app[data-font-scale="large"] .iqamah-time,
+#app[data-font-scale="large"] .adhan-time,
+#app[data-font-scale="large"] .js-clock {
+  transform: scale(1.15);
+  transform-origin: center;
+}

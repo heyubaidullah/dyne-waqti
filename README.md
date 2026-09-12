@@ -4,10 +4,14 @@ Offline-first mosque digital signage: a single Go binary serving a 24/7
 `/display` kiosk view (prayer times, Hijri date, flyers, Iqamah countdown,
 Janazah alerts) and a password-protected `/admin` panel for managing it.
 
-**Status: v1.0.0** — backend, the React `/admin` panel, and the
-vanilla-JS `/display` kiosk view are all built, tested, and merged, with
-CI-driven Windows release builds (see [CHANGELOG.md](CHANGELOG.md)). Not
-yet done: a live NSSM/Windows-service run on real hardware and a genuine
+**Status: v1.1.0** — the pilot-feedback release, built from the first live
+masjid deployment (see [CHANGELOG.md](CHANGELOG.md) for the full list):
+exact, independently-set Azaan/Iqamah clock times per prayer, Jumu'ah 1/2
+support, a Display Settings panel (font size, Gregorian date,
+silence-screen duration, "Powered by Waqti" attribution banner, opt-in
+weather in °F or °C), Full Screen/In Screen flyer display modes, an
+in-admin Help/FAQ page, and a `--reset-passphrase` recovery flow. Not yet
+done: a live NSSM/Windows-service run on real hardware and a genuine
 multi-day soak test of `/display`.
 
 ## Requirements
@@ -41,7 +45,7 @@ below instead.
 ```sh
 make build      # -> ./waqti (builds both frontends first, then the Go binary)
 make run        # build + run
-make test       # go test ./...
+make test       # go test ./... && (cd web/display && npm test)
 make build-windows   # cross-compile a Windows .exe from any host — no Node/Go needed on the target machine
 make build-backend-only   # Go-only rebuild, skips the npm builds (uses whatever's already in internal/api/*ui/dist)
 ```
@@ -62,6 +66,14 @@ Note it down — it is never written to disk in plaintext and is not shown
 again. Log in at `/admin`. (There's currently no in-UI way to change the
 passphrase after the fact — a known gap, not yet built.)
 
+**Forgot the passphrase?** Run `waqti` (or `waqti.exe`) with
+`--reset-passphrase` — it clears the stored passphrase, generates and
+prints a brand-new one, then exits without starting the server. Nothing
+else (settings, prayer times, slides) is touched. On Windows, running as
+a background service, use `scripts\Reset-Passphrase.bat` instead — it
+stops the service, resets, prints the new passphrase, and restarts the
+service for you.
+
 ## Configuration
 
 | Env var | Default | Purpose |
@@ -70,10 +82,15 @@ passphrase after the fact — a known gap, not yet built.)
 | `WAQTI_ADDR` | `:3000` | HTTP listen address. |
 
 Mosque-specific settings (timezone, coordinates, calculation method, Asr
-juristic method, Iqamah offsets, Hijri adjustment) live in the `settings`
-table and are seeded with safe defaults (UTC, 0/0, ISNA) on first run —
-set real values from the `/admin` panel's settings section (or directly
-via `POST /api/v1/admin/settings`).
+juristic method, Hijri adjustment) live in the `settings` table and are
+seeded with safe defaults (UTC, 0/0, ISNA) on first run — set real values
+from the `/admin` panel's settings section (or directly via `POST
+/api/v1/admin/settings`). Exact per-prayer Azaan/Iqamah clock times and
+Jumu'ah 1/2 times live under `/admin`'s Prayer Times section (`GET`/`POST
+/api/v1/admin/prayer-times`); visual/kiosk preferences (font size,
+Gregorian date, silence-screen duration, attribution banner, opt-in
+weather) live under Display Settings (`GET`/`POST
+/api/v1/admin/display-settings`).
 
 ## Data & backups
 
@@ -162,7 +179,7 @@ Once you've confirmed it runs (either path above):
 
 ## REST/SSE API
 
-See `mosque-display-agent-prompt.md` for the full endpoint table. All
+See `internal/api/router.go` for the full, always-current route table. All
 `/api/v1/admin/*` endpoints and `POST /api/v1/auth/logout` require a valid
 session cookie (issued by `POST /api/v1/auth/login`); `GET
 /api/v1/display-data` and `GET /api/v1/sse` are public and read-only.

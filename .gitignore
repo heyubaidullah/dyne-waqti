@@ -8,6 +8,10 @@
 *.exe
 .DS_Store
 .claude/
+
+# Local-only project docs (agent prompts, working notes) — not part of the
+# shipped repo, kept out of version control on purpose.
+/docs/
 /web/admin/node_modules/
 /web/display/node_modules/
 

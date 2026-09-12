@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "tailwindcss -i css/input.css -o ../../internal/api/displayui/dist/css/output.css --minify"
+    "build": "tailwindcss -i css/input.css -o ../../internal/api/displayui/dist/css/output.css --minify",
+    "test": "node --test"
   },
   "devDependencies": {
     "@tailwindcss/cli": "^4.3.3",

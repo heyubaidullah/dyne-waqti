@@ -108,6 +108,55 @@ func TestDSTFallBack(t *testing.T) {
 	}
 }
 
+// TestDSTSouthernHemisphere covers Australia/Sydney, where DST runs
+// opposite the Northern Hemisphere's calendar (starts ~October, ends
+// ~April) — proves the DST-transition handling isn't accidentally only
+// correct for the Northern Hemisphere zones exercised above.
+func TestDSTSouthernHemisphere(t *testing.T) {
+	const (
+		sydneyLat = -33.8688
+		sydneyLon = 151.2093
+	)
+
+	loc, err := time.LoadLocation("Australia/Sydney")
+	if err != nil {
+		t.Fatalf("LoadLocation: %v", err)
+	}
+
+	// 2026-04-05: Sydney's DST ends (clocks go back), opposite month from
+	// the Northern Hemisphere fall-back case above.
+	before := time.Date(2026, 4, 4, 12, 0, 0, 0, loc)
+	transition := time.Date(2026, 4, 5, 12, 0, 0, 0, loc)
+
+	beforeTimes, err := Calculate(before, sydneyLat, sydneyLon, loc, MethodMWL, AsrStandard)
+	if err != nil {
+		t.Fatalf("Calculate(before): %v", err)
+	}
+	assertOrdered(t, beforeTimes)
+
+	transitionTimes, err := Calculate(transition, sydneyLat, sydneyLon, loc, MethodMWL, AsrStandard)
+	if err != nil {
+		t.Fatalf("Calculate(transition): %v", err)
+	}
+	assertOrdered(t, transitionTimes)
+
+	// After DST ends, Sydney is AEST (UTC+10), not AEDT (UTC+11).
+	if _, offset := transitionTimes.Dhuhr.Zone(); offset != 10*3600 {
+		t.Errorf("2026-04-05 Dhuhr UTC offset = %d, want 36000 (AEST)", offset)
+	}
+
+	// 2026-10-04: Sydney's DST begins (clocks go forward).
+	springForward := time.Date(2026, 10, 4, 12, 0, 0, 0, loc)
+	springTimes, err := Calculate(springForward, sydneyLat, sydneyLon, loc, MethodMWL, AsrStandard)
+	if err != nil {
+		t.Fatalf("Calculate(springForward): %v", err)
+	}
+	assertOrdered(t, springTimes)
+	if _, offset := springTimes.Dhuhr.Zone(); offset != 11*3600 {
+		t.Errorf("2026-10-04 Dhuhr UTC offset = %d, want 39600 (AEDT)", offset)
+	}
+}
+
 // TestDSTAllCalculationMethods sanity-checks every supported method stays
 // internally consistent across the spring-forward date.
 func TestDSTAllCalculationMethods(t *testing.T) {

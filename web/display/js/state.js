@@ -4,10 +4,12 @@
 
 export const PRAYER_ORDER = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
 
-// Mid-range of the spec's stated windows (10-15min / 1-2min / 15-20min).
+// Mid-range of the spec's stated windows (10-15min / 1-2min). The
+// after-prayer silence-screen duration is admin-configurable (default 7min,
+// see DEFAULT_SILENCE_DUR_SEC below) rather than a fixed constant.
 export const COUNTDOWN_LEAD_SEC = 12 * 60;
 export const SILENCE_LEAD_SEC = 90;
-export const SILENCE_DUR_SEC = 17 * 60;
+export const DEFAULT_SILENCE_DUR_SEC = 7 * 60;
 
 // Extracts the server's local calendar date and UTC offset directly from
 // the ISO timestamp string (e.g. "2026-08-14T02:30:16-04:00"), so the
@@ -51,6 +53,10 @@ export function computeState(displayData, estimatedNow) {
   const { dateOnly, offset } = parseServerNow(displayData.now);
   const tomorrow = addDays(dateOnly, 1);
   const nowMs = estimatedNow.getTime();
+  const silenceDurSec =
+    Number.isFinite(displayData.silence_duration_after_min) && displayData.silence_duration_after_min > 0
+      ? displayData.silence_duration_after_min * 60
+      : DEFAULT_SILENCE_DUR_SEC;
 
   const candidates = PRAYER_ORDER.map((name) => ({
     name,
@@ -64,7 +70,7 @@ export function computeState(displayData, estimatedNow) {
   let nextFuture = null;
   for (const c of candidates) {
     const deltaSec = (c.time.getTime() - nowMs) / 1000; // positive = still upcoming
-    if (deltaSec <= COUNTDOWN_LEAD_SEC && deltaSec >= -SILENCE_DUR_SEC) {
+    if (deltaSec <= COUNTDOWN_LEAD_SEC && deltaSec >= -silenceDurSec) {
       if (!active || Math.abs(deltaSec) < Math.abs(active.deltaSec)) {
         active = { name: c.name, deltaSec };
       }
@@ -85,5 +91,21 @@ export function computeState(displayData, estimatedNow) {
     state: 'IDLE',
     nextPrayerName: nextFuture ? nextFuture.name : null,
     secondsToIqamah: nextFuture ? nextFuture.deltaSec : null,
+  };
+}
+
+/**
+ * Decides which Jumu'ah slots (1 or 2) should be visible, from the
+ * `jumuah_times` array the API returns. Pure and DOM-free so it's directly
+ * unit-testable — render.js just toggles each slot's `hidden` class based
+ * on this.
+ * @param {Array<{label: string, iqamah: string}>} jumuahTimes
+ * @returns {{jumuah: boolean, jumuah2: boolean}}
+ */
+export function jummahSlots(jumuahTimes) {
+  const slots = Array.isArray(jumuahTimes) ? jumuahTimes : [];
+  return {
+    jumuah: slots.length >= 1,
+    jumuah2: slots.length >= 2,
   };
 }

@@ -63,9 +63,7 @@ func TestUpdateSettingsValidatesAndPersists(t *testing.T) {
 	valid := settingsPayload{
 		Timezone: "America/New_York", Latitude: "40.7128", Longitude: "-74.0060",
 		CalcMethod: "MWL", AsrMethod: "HANAFI", HijriAdjustDays: "1",
-		IqamahFajrMin: "20", IqamahDhuhrMin: "10", IqamahAsrMin: "10",
-		IqamahMaghribMin: "5", IqamahIshaMin: "10", LogoHeightPx: "150",
-		TimingsDurationSec: "15",
+		LogoHeightPx: "150", TimingsDurationSec: "15",
 	}
 
 	// Invalid timezone is rejected.
@@ -121,6 +119,75 @@ func TestUpdateSettingsValidatesAndPersists(t *testing.T) {
 	}
 }
 
+// TestUpdateSettingsAcceptsWideTimezoneSpread proves tzdata coverage isn't
+// US-centric: a half-hour-offset zone, a zone with no DST at all, a
+// Southern-Hemisphere zone (DST flips relative to the Northern Hemisphere),
+// and a historically-tricky European zone all save and reload correctly.
+// This is the broadened verification for the pilot's "timezone rejected"
+// report — cmd/server/main.go already embeds the full IANA database
+// (`_ "time/tzdata"`, shipped in v1.0.1), so this proves that fix generalizes
+// well beyond the single US zone the older test covered.
+func TestUpdateSettingsAcceptsWideTimezoneSpread(t *testing.T) {
+	deps := newTestDeps(t)
+	mux := NewRouter(deps)
+	cookie := loginAndGetCookie(t, mux)
+
+	zones := []string{
+		"Asia/Kolkata",     // UTC+5:30 — also covers Hyderabad, India (no distinct IANA zone)
+		"Asia/Riyadh",      // no DST at all
+		"Australia/Sydney", // Southern Hemisphere — DST months opposite the Northern Hemisphere
+		"Europe/Istanbul",  // historically changed DST rules more than once
+	}
+
+	for _, zone := range zones {
+		t.Run(zone, func(t *testing.T) {
+			payload := settingsPayload{
+				Timezone: zone, Latitude: "0", Longitude: "0",
+				CalcMethod: "MWL", AsrMethod: "SHAFI", HijriAdjustDays: "0",
+				LogoHeightPx: "150", TimingsDurationSec: "15",
+			}
+			body, _ := json.Marshal(payload)
+			req := httptest.NewRequest(http.MethodPost, "/api/v1/admin/settings", bytes.NewReader(body))
+			req.Header.Set("Content-Type", "application/json")
+			req.AddCookie(cookie)
+			rec := httptest.NewRecorder()
+			mux.ServeHTTP(rec, req)
+			if rec.Code != http.StatusOK {
+				t.Fatalf("save %s status = %d, want 200; body=%s", zone, rec.Code, rec.Body.String())
+			}
+
+			req = httptest.NewRequest(http.MethodGet, "/api/v1/admin/settings", nil)
+			req.AddCookie(cookie)
+			rec = httptest.NewRecorder()
+			mux.ServeHTTP(rec, req)
+			var got settingsPayload
+			if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+				t.Fatalf("unmarshal: %v", err)
+			}
+			if got.Timezone != zone {
+				t.Errorf("reloaded timezone = %q, want %q", got.Timezone, zone)
+			}
+
+			// display-data must also load successfully with this zone —
+			// proves time.LoadLocation succeeds end-to-end, not just at
+			// the settings-save validation step.
+			req = httptest.NewRequest(http.MethodGet, "/api/v1/display-data", nil)
+			rec = httptest.NewRecorder()
+			mux.ServeHTTP(rec, req)
+			if rec.Code != http.StatusOK {
+				t.Fatalf("display-data with %s status = %d, want 200; body=%s", zone, rec.Code, rec.Body.String())
+			}
+			var displayData map[string]any
+			if err := json.Unmarshal(rec.Body.Bytes(), &displayData); err != nil {
+				t.Fatalf("unmarshal display-data: %v", err)
+			}
+			if displayData["timezone"] != zone {
+				t.Errorf("display-data timezone = %v, want %q", displayData["timezone"], zone)
+			}
+		})
+	}
+}
+
 func TestUpdateSettingsRejectsNonIntegerTimingsDuration(t *testing.T) {
 	deps := newTestDeps(t)
 	mux := NewRouter(deps)
@@ -129,9 +196,7 @@ func TestUpdateSettingsRejectsNonIntegerTimingsDuration(t *testing.T) {
 	bad := settingsPayload{
 		Timezone: "America/New_York", Latitude: "40.7128", Longitude: "-74.0060",
 		CalcMethod: "MWL", AsrMethod: "HANAFI", HijriAdjustDays: "1",
-		IqamahFajrMin: "20", IqamahDhuhrMin: "10", IqamahAsrMin: "10",
-		IqamahMaghribMin: "5", IqamahIshaMin: "10", LogoHeightPx: "150",
-		TimingsDurationSec: "not-a-number",
+		LogoHeightPx: "150", TimingsDurationSec: "not-a-number",
 	}
 	body, _ := json.Marshal(bad)
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/admin/settings", bytes.NewReader(body))
