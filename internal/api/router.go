@@ -32,6 +32,8 @@ func NewRouter(d *Deps) *http.ServeMux {
 	mux.Handle("GET /api/v1/admin/settings", d.Auth.Middleware(http.HandlerFunc(d.handleGetSettings)))
 	mux.Handle("POST /api/v1/admin/settings", d.Auth.Middleware(http.HandlerFunc(d.handleUpdateSettings)))
 	mux.Handle("POST /api/v1/admin/prayer-times", d.Auth.Middleware(http.HandlerFunc(d.handleUpdatePrayerTimes)))
+	mux.Handle("GET /api/v1/admin/display-settings", d.Auth.Middleware(http.HandlerFunc(d.handleGetDisplaySettings)))
+	mux.Handle("POST /api/v1/admin/display-settings", d.Auth.Middleware(http.HandlerFunc(d.handleUpdateDisplaySettings)))
 	mux.Handle("GET /api/v1/admin/slides", d.Auth.Middleware(http.HandlerFunc(d.handleListAllSlides)))
 	mux.Handle("POST /api/v1/admin/slides", d.Auth.Middleware(http.HandlerFunc(d.handleCreateSlide)))
 	mux.Handle("PATCH /api/v1/admin/slides/{id}", d.Auth.Middleware(http.HandlerFunc(d.handleUpdateSlide)))
