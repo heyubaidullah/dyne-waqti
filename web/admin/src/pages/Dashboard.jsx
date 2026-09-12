@@ -8,25 +8,32 @@ import { api, AuthError } from '../api.js'
 import Header from '../components/Header.jsx'
 import Footer from '../components/Footer.jsx'
 import EmergencyControls from '../components/EmergencyControls.jsx'
-import IqamahTimesForm from '../components/IqamahTimesForm.jsx'
+import PrayerTimesForm from '../components/PrayerTimesForm.jsx'
 import SettingsForm from '../components/SettingsForm.jsx'
+import DisplaySettingsForm from '../components/DisplaySettingsForm.jsx'
 import SlideManager from '../components/SlideManager.jsx'
 import LogoUpload from '../components/LogoUpload.jsx'
 
-export default function Dashboard({ onAuthError, onLogout }) {
+export default function Dashboard({ onAuthError, onLogout, onShowHelp }) {
   const [settings, setSettings] = useState(null)
+  const [prayerTimes, setPrayerTimes] = useState(null)
+  const [displaySettings, setDisplaySettings] = useState(null)
   const [slides, setSlides] = useState(null)
   const [displayData, setDisplayData] = useState(null)
   const [loadError, setLoadError] = useState(null)
 
   const refreshAll = useCallback(async () => {
     try {
-      const [settingsRes, slidesRes, displayRes] = await Promise.all([
+      const [settingsRes, prayerTimesRes, displaySettingsRes, slidesRes, displayRes] = await Promise.all([
         api.getSettings(),
+        api.getPrayerTimes(),
+        api.getDisplaySettings(),
         api.listSlides(),
         api.getDisplayData(),
       ])
       setSettings(settingsRes)
+      setPrayerTimes(prayerTimesRes)
+      setDisplaySettings(displaySettingsRes)
       setSlides(slidesRes)
       setDisplayData(displayRes)
       setLoadError(null)
@@ -71,7 +78,7 @@ export default function Dashboard({ onAuthError, onLogout }) {
     )
   }
 
-  if (!settings || !slides || !displayData) {
+  if (!settings || !prayerTimes || !displaySettings || !slides || !displayData) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
         <CircularProgress color="primary" />
@@ -81,12 +88,13 @@ export default function Dashboard({ onAuthError, onLogout }) {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-      <Header onLogout={handleLogout} logoUrl={displayData.logo_url} />
+      <Header onLogout={handleLogout} onShowHelp={onShowHelp} logoUrl={displayData.logo_url} />
       <Container maxWidth="md" sx={{ flex: 1, py: 4 }}>
         <Stack spacing={3}>
           <LogoUpload logoUrl={displayData.logo_url} runGuarded={runGuarded} />
-          <IqamahTimesForm displayData={displayData} settings={settings} runGuarded={runGuarded} />
+          <PrayerTimesForm prayerTimes={prayerTimes} displayData={displayData} runGuarded={runGuarded} />
           <SettingsForm settings={settings} runGuarded={runGuarded} />
+          <DisplaySettingsForm displaySettings={displaySettings} runGuarded={runGuarded} />
           <SlideManager slides={slides} runGuarded={runGuarded} />
           <EmergencyControls displayData={displayData} runGuarded={runGuarded} />
         </Stack>
