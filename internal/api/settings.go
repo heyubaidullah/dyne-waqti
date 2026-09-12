@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"strconv"
+	"time"
 
 	"github.com/heyubaidullah/waqti/internal/calc"
 	"github.com/heyubaidullah/waqti/internal/db"
@@ -18,16 +19,16 @@ const (
 	SettingAsrMethod          = "asr_method"
 	SettingHijriAdjustDays    = "hijri_adjust_days"
 	SettingBlackout           = "blackout"
-	SettingIqamahFajrMin      = "iqamah_fajr_min"
-	SettingIqamahDhuhrMin     = "iqamah_dhuhr_min"
-	SettingIqamahAsrMin       = "iqamah_asr_min"
-	SettingIqamahMaghribMin   = "iqamah_maghrib_min"
-	SettingIqamahIshaMin      = "iqamah_isha_min"
-	SettingAzaanFajrMin       = "azaan_fajr_min"
-	SettingAzaanDhuhrMin      = "azaan_dhuhr_min"
-	SettingAzaanAsrMin        = "azaan_asr_min"
-	SettingAzaanMaghribMin    = "azaan_maghrib_min"
-	SettingAzaanIshaMin       = "azaan_isha_min"
+	SettingAzaanFajrTime      = "azaan_fajr_time"
+	SettingAzaanDhuhrTime     = "azaan_dhuhr_time"
+	SettingAzaanAsrTime       = "azaan_asr_time"
+	SettingAzaanMaghribTime   = "azaan_maghrib_time"
+	SettingAzaanIshaTime      = "azaan_isha_time"
+	SettingIqamahFajrTime     = "iqamah_fajr_time"
+	SettingIqamahDhuhrTime    = "iqamah_dhuhr_time"
+	SettingIqamahAsrTime      = "iqamah_asr_time"
+	SettingIqamahMaghribTime  = "iqamah_maghrib_time"
+	SettingIqamahIshaTime     = "iqamah_isha_time"
 	SettingJumuahCount        = "jumuah_count"
 	SettingJumuah1Iqamah      = "jumuah_1_iqamah"
 	SettingJumuah2Iqamah      = "jumuah_2_iqamah"
@@ -56,23 +57,27 @@ var defaultSettings = map[string]string{
 	// San Antonio, TX (Central Time) — a friendlier out-of-the-box default
 	// than UTC/0,0 for this deployment. Only seeded on a fresh data/
 	// directory; an admin can change it from /admin at any time.
-	SettingTimezone:                "America/Chicago",
-	SettingLatitude:                "29.4241",
-	SettingLongitude:               "-98.4936",
-	SettingCalcMethod:              string(calc.MethodISNA),
-	SettingAsrMethod:               string(calc.AsrStandard),
-	SettingHijriAdjustDays:         "0",
-	SettingBlackout:                "0",
-	SettingIqamahFajrMin:           "20",
-	SettingIqamahDhuhrMin:          "10",
-	SettingIqamahAsrMin:            "10",
-	SettingIqamahMaghribMin:        "5",
-	SettingIqamahIshaMin:           "10",
-	SettingAzaanFajrMin:            "0",
-	SettingAzaanDhuhrMin:           "0",
-	SettingAzaanAsrMin:             "0",
-	SettingAzaanMaghribMin:         "0",
-	SettingAzaanIshaMin:            "0",
+	SettingTimezone:        "America/Chicago",
+	SettingLatitude:        "29.4241",
+	SettingLongitude:       "-98.4936",
+	SettingCalcMethod:      string(calc.MethodISNA),
+	SettingAsrMethod:       string(calc.AsrStandard),
+	SettingHijriAdjustDays: "0",
+	SettingBlackout:        "0",
+	// Placeholder clock times for a fresh install — bear no relationship to
+	// the seeded San Antonio coordinates above; an admin is expected to set
+	// these to their own masjid's actual posted prayer schedule immediately,
+	// the same way the coordinates need setting for accurate calculation.
+	SettingAzaanFajrTime:           "06:00",
+	SettingAzaanDhuhrTime:          "13:15",
+	SettingAzaanAsrTime:            "17:00",
+	SettingAzaanMaghribTime:        "19:45",
+	SettingAzaanIshaTime:           "21:00",
+	SettingIqamahFajrTime:          "06:20",
+	SettingIqamahDhuhrTime:         "13:25",
+	SettingIqamahAsrTime:           "17:10",
+	SettingIqamahMaghribTime:       "19:50",
+	SettingIqamahIshaTime:          "21:15",
 	SettingJumuahCount:             "1",
 	SettingJumuah1Iqamah:           "",
 	SettingJumuah2Iqamah:           "",
@@ -114,6 +119,18 @@ type JumuahSlot struct {
 	Iqamah string // HH:MM
 }
 
+// PrayerTimeSet holds one HH:MM clock time per daily prayer — an admin's
+// exact, fixed schedule (for either Azaan or Iqamah), not a formula. It
+// stays exactly what was entered until an admin changes it again; nothing
+// recalculates it in the background.
+type PrayerTimeSet struct {
+	Fajr    string
+	Dhuhr   string
+	Asr     string
+	Maghrib string
+	Isha    string
+}
+
 // DisplaySettings is the resolved, typed view of the settings table used to
 // compute prayer times and Hijri date.
 type DisplaySettings struct {
@@ -127,8 +144,8 @@ type DisplaySettings struct {
 	LogoURL                 string
 	LogoHeightPx            int
 	TimingsDurationSec      int
-	AzaanOffsets            calc.Offsets
-	IqamahOffsets           calc.Offsets
+	AzaanTimes              PrayerTimeSet
+	IqamahTimes             PrayerTimeSet
 	JumuahCount             int
 	Jumuah1Iqamah           string
 	Jumuah2Iqamah           string
@@ -181,19 +198,19 @@ func loadDisplaySettings(database *sql.DB) (DisplaySettings, error) {
 		LogoURL:            get(SettingLogoURL, ""),
 		LogoHeightPx:       atoiOr(get(SettingLogoHeightPx, "150"), 150),
 		TimingsDurationSec: atoiOr(get(SettingTimingsDurationSec, "15"), 15),
-		AzaanOffsets: calc.Offsets{
-			FajrMin:    atoiOr(get(SettingAzaanFajrMin, "0"), 0),
-			DhuhrMin:   atoiOr(get(SettingAzaanDhuhrMin, "0"), 0),
-			AsrMin:     atoiOr(get(SettingAzaanAsrMin, "0"), 0),
-			MaghribMin: atoiOr(get(SettingAzaanMaghribMin, "0"), 0),
-			IshaMin:    atoiOr(get(SettingAzaanIshaMin, "0"), 0),
+		AzaanTimes: PrayerTimeSet{
+			Fajr:    get(SettingAzaanFajrTime, "06:00"),
+			Dhuhr:   get(SettingAzaanDhuhrTime, "13:15"),
+			Asr:     get(SettingAzaanAsrTime, "17:00"),
+			Maghrib: get(SettingAzaanMaghribTime, "19:45"),
+			Isha:    get(SettingAzaanIshaTime, "21:00"),
 		},
-		IqamahOffsets: calc.Offsets{
-			FajrMin:    atoiOr(get(SettingIqamahFajrMin, "20"), 20),
-			DhuhrMin:   atoiOr(get(SettingIqamahDhuhrMin, "10"), 10),
-			AsrMin:     atoiOr(get(SettingIqamahAsrMin, "10"), 10),
-			MaghribMin: atoiOr(get(SettingIqamahMaghribMin, "5"), 5),
-			IshaMin:    atoiOr(get(SettingIqamahIshaMin, "10"), 10),
+		IqamahTimes: PrayerTimeSet{
+			Fajr:    get(SettingIqamahFajrTime, "06:20"),
+			Dhuhr:   get(SettingIqamahDhuhrTime, "13:25"),
+			Asr:     get(SettingIqamahAsrTime, "17:10"),
+			Maghrib: get(SettingIqamahMaghribTime, "19:50"),
+			Isha:    get(SettingIqamahIshaTime, "21:15"),
 		},
 		JumuahCount:             jumuahCount,
 		Jumuah1Iqamah:           get(SettingJumuah1Iqamah, ""),
@@ -207,4 +224,17 @@ func loadDisplaySettings(database *sql.DB) (DisplaySettings, error) {
 		WeatherEnabled:          get(SettingWeatherEnabled, "0") == "1",
 		WeatherUnit:             get(SettingWeatherUnit, "F"),
 	}, nil
+}
+
+// currentCalculatedTimes returns today's astronomically-calculated prayer
+// times for s's configured location — used only as a read-only reference
+// shown to the admin alongside the exact Azaan/Iqamah times they set (which
+// are fixed, not derived from this). Never surfaced on the public
+// /api/v1/display-data endpoint.
+func currentCalculatedTimes(s DisplaySettings) (calc.Times, error) {
+	loc, err := time.LoadLocation(s.Timezone)
+	if err != nil {
+		loc = time.UTC
+	}
+	return calc.Calculate(time.Now().In(loc), s.Latitude, s.Longitude, loc, s.CalcMethod, s.AsrMethod)
 }

@@ -91,38 +91,35 @@ func (d *Deps) handleDisplayData(w http.ResponseWriter, r *http.Request) {
 	now := time.Now().In(loc)
 	dateStr := now.Format("2006-01-02")
 
-	calculated, err := calc.Calculate(now, settings.Latitude, settings.Longitude, loc, settings.CalcMethod, settings.AsrMethod)
+	// Sunrise has no admin override — it's informational only, always the
+	// astronomically calculated value. Azaan/Iqamah are the admin's exact,
+	// fixed clock times (settings.AzaanTimes/IqamahTimes below), not derived
+	// from this calculation at all.
+	calculated, err := currentCalculatedTimes(settings)
 	if err != nil {
 		respondError(w, http.StatusInternalServerError, "prayer time calculation failed: "+err.Error())
 		return
 	}
-	// Azaan is offset from the raw calculated time; Iqamah is then offset
-	// from the (possibly already-offset) Azaan time — a masjid's Iqamah is
-	// "N minutes after Azaan is called," not N minutes after the abstract
-	// calculated time. With both offsets defaulting to zero this collapses
-	// to the original calculated-time-based behavior.
-	azaan := calc.ApplyOffsets(calculated, settings.AzaanOffsets)
-	computedIqamah := calc.ApplyOffsets(azaan, settings.IqamahOffsets)
 
 	jumuah1 := settings.Jumuah1Iqamah
 	if jumuah1 == "" {
-		jumuah1 = computedIqamah.Dhuhr.Format("15:04")
+		jumuah1 = settings.IqamahTimes.Dhuhr
 	}
 	jumuahTimes := []jumuahSlotView{{Label: "Jumu'ah", Iqamah: jumuah1}}
 	if settings.JumuahCount == 2 {
 		jumuah2 := settings.Jumuah2Iqamah
 		if jumuah2 == "" {
-			jumuah2 = computedIqamah.Dhuhr.Format("15:04")
+			jumuah2 = settings.IqamahTimes.Dhuhr
 		}
 		jumuahTimes = append(jumuahTimes, jumuahSlotView{Label: "Jumu'ah 2", Iqamah: jumuah2})
 	}
 
 	iqamah := iqamahView{
-		Fajr:    computedIqamah.Fajr.Format("15:04"),
-		Dhuhr:   computedIqamah.Dhuhr.Format("15:04"),
-		Asr:     computedIqamah.Asr.Format("15:04"),
-		Maghrib: computedIqamah.Maghrib.Format("15:04"),
-		Isha:    computedIqamah.Isha.Format("15:04"),
+		Fajr:    settings.IqamahTimes.Fajr,
+		Dhuhr:   settings.IqamahTimes.Dhuhr,
+		Asr:     settings.IqamahTimes.Asr,
+		Maghrib: settings.IqamahTimes.Maghrib,
+		Isha:    settings.IqamahTimes.Isha,
 		Jumuah:  jumuah1,
 	}
 
@@ -173,9 +170,9 @@ func (d *Deps) handleDisplayData(w http.ResponseWriter, r *http.Request) {
 		Hijri:             hijriView{Year: hijri.Year, Month: hijri.Month, Day: hijri.Day},
 		ShowGregorianDate: settings.ShowGregorianDate,
 		AdhanTimes: prayerTimesView{
-			Fajr: azaan.Fajr.Format("15:04"), Sunrise: calculated.Sunrise.Format("15:04"),
-			Dhuhr: azaan.Dhuhr.Format("15:04"), Asr: azaan.Asr.Format("15:04"),
-			Maghrib: azaan.Maghrib.Format("15:04"), Isha: azaan.Isha.Format("15:04"),
+			Fajr: settings.AzaanTimes.Fajr, Sunrise: calculated.Sunrise.Format("15:04"),
+			Dhuhr: settings.AzaanTimes.Dhuhr, Asr: settings.AzaanTimes.Asr,
+			Maghrib: settings.AzaanTimes.Maghrib, Isha: settings.AzaanTimes.Isha,
 		},
 		IqamahTimes:             iqamah,
 		JumuahTimes:             jumuahTimes,

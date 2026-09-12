@@ -157,42 +157,6 @@ func TestDSTSouthernHemisphere(t *testing.T) {
 	}
 }
 
-// TestDSTWithOffsetsApplied proves saved Azaan/Iqamah offsets survive a DST
-// transition intact — the actual root cause of the pilot's "timings changed
-// overnight" report was a data-model bug (per-date storage silently
-// reverting the next day), not a DST calculation bug, but this closes the
-// loop by confirming offset application itself is DST-transition-safe.
-func TestDSTWithOffsetsApplied(t *testing.T) {
-	loc, err := time.LoadLocation("America/New_York")
-	if err != nil {
-		t.Fatalf("LoadLocation: %v", err)
-	}
-	azaan := Offsets{FajrMin: 3, DhuhrMin: 0, AsrMin: 0, MaghribMin: 2, IshaMin: 0}
-	iqamah := Offsets{FajrMin: 20, DhuhrMin: 10, AsrMin: 10, MaghribMin: 5, IshaMin: 10}
-
-	for _, date := range []time.Time{
-		time.Date(2026, 3, 8, 12, 0, 0, 0, loc),  // spring-forward
-		time.Date(2026, 11, 1, 12, 0, 0, 0, loc), // fall-back
-	} {
-		calculated, err := Calculate(date, nycLat, nycLon, loc, MethodISNA, AsrStandard)
-		if err != nil {
-			t.Fatalf("Calculate: %v", err)
-		}
-		azaanTimes := ApplyOffsets(calculated, azaan)
-		iqamahTimes := ApplyOffsets(azaanTimes, iqamah)
-		assertOrdered(t, iqamahTimes)
-
-		wantFajrAzaan := calculated.Fajr.Add(3 * time.Minute)
-		if !azaanTimes.Fajr.Equal(wantFajrAzaan) {
-			t.Errorf("%v: Fajr azaan = %v, want %v", date, azaanTimes.Fajr, wantFajrAzaan)
-		}
-		wantFajrIqamah := wantFajrAzaan.Add(20 * time.Minute)
-		if !iqamahTimes.Fajr.Equal(wantFajrIqamah) {
-			t.Errorf("%v: Fajr iqamah = %v, want %v (azaan + 20min, chained not from raw calculated)", date, iqamahTimes.Fajr, wantFajrIqamah)
-		}
-	}
-}
-
 // TestDSTAllCalculationMethods sanity-checks every supported method stays
 // internally consistent across the spring-forward date.
 func TestDSTAllCalculationMethods(t *testing.T) {

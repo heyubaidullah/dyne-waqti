@@ -99,29 +99,3 @@ func Calculate(date time.Time, lat, lon float64, tz *time.Location, method Metho
 		Isha:    pt.Isha.In(tz),
 	}, nil
 }
-
-// Offsets holds the number of minutes after a baseline Times each prayer's
-// derived time should land. Used both for Azaan (offset from the raw
-// calculated time) and Iqamah (offset from the, possibly already-offset,
-// Azaan time) — see ApplyOffsets.
-type Offsets struct {
-	FajrMin    int
-	DhuhrMin   int
-	AsrMin     int
-	MaghribMin int
-	IshaMin    int
-}
-
-// ApplyOffsets returns times derived from baseline times t, each prayer
-// shifted by its corresponding minute offset in o. Sunrise is never
-// offset — it isn't a prayer, just an informational marker.
-func ApplyOffsets(t Times, o Offsets) Times {
-	return Times{
-		Fajr:    t.Fajr.Add(time.Duration(o.FajrMin) * time.Minute),
-		Sunrise: t.Sunrise,
-		Dhuhr:   t.Dhuhr.Add(time.Duration(o.DhuhrMin) * time.Minute),
-		Asr:     t.Asr.Add(time.Duration(o.AsrMin) * time.Minute),
-		Maghrib: t.Maghrib.Add(time.Duration(o.MaghribMin) * time.Minute),
-		Isha:    t.Isha.Add(time.Duration(o.IshaMin) * time.Minute),
-	}
-}

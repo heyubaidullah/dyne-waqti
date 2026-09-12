@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
 )
 
 func getDisplayData(t *testing.T, mux http.Handler) map[string]any {
@@ -37,57 +36,94 @@ func postPrayerTimes(t *testing.T, mux http.Handler, cookie *http.Cookie, req pr
 	}
 }
 
-func defaultPrayerTimesRequest() prayerTimesRequest {
+func getPrayerTimes(t *testing.T, mux http.Handler, cookie *http.Cookie) prayerTimesResponse {
+	t.Helper()
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/admin/prayer-times", nil)
+	req.AddCookie(cookie)
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("GET prayer-times status = %d, want 200; body=%s", rec.Code, rec.Body.String())
+	}
+	var resp prayerTimesResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("unmarshal prayer-times: %v", err)
+	}
+	return resp
+}
+
+func sampleTimesRequest() prayerTimesRequest {
 	return prayerTimesRequest{
-		AzaanFajrMin: "0", AzaanDhuhrMin: "0", AzaanAsrMin: "0", AzaanMaghribMin: "0", AzaanIshaMin: "0",
-		IqamahFajrMin: "20", IqamahDhuhrMin: "10", IqamahAsrMin: "10", IqamahMaghribMin: "5", IqamahIshaMin: "10",
+		AzaanFajrTime: "05:45", AzaanDhuhrTime: "13:15", AzaanAsrTime: "17:00", AzaanMaghribTime: "19:45", AzaanIshaTime: "21:00",
+		IqamahFajrTime: "06:05", IqamahDhuhrTime: "13:25", IqamahAsrTime: "17:10", IqamahMaghribTime: "19:50", IqamahIshaTime: "21:15",
 		JumuahCount: 1,
 	}
 }
 
-// TestAzaanDefaultsToCalculatedTime proves that with no Azaan offset
-// configured, the displayed Azaan time is exactly the calculated Adhan
-// time — the default fallback the spec requires.
-func TestAzaanDefaultsToCalculatedTime(t *testing.T) {
-	deps := newTestDeps(t)
-	mux := NewRouter(deps)
-
-	before := getDisplayData(t, mux)
-	after := getDisplayData(t, mux)
-	beforeAdhan := before["adhan_times"].(map[string]any)
-	afterAdhan := after["adhan_times"].(map[string]any)
-	if beforeAdhan["fajr"] != afterAdhan["fajr"] {
-		t.Errorf("adhan time changed between two default-settings calls: %v vs %v", beforeAdhan["fajr"], afterAdhan["fajr"])
-	}
-}
-
-// TestAzaanAndIqamahOffsetsAreIndependent proves setting one doesn't
-// clobber the other, and that Iqamah chains off the (possibly offset)
-// Azaan time rather than the raw calculated time.
-func TestAzaanAndIqamahOffsetsAreIndependent(t *testing.T) {
+// TestPrayerTimesAreExactNotCalculated proves the admin's saved clock times
+// are shown verbatim on the public display — no offset, no chaining off a
+// calculated value. This is the whole point of the exact-time model: what
+// you type is what shows up.
+func TestPrayerTimesAreExactNotCalculated(t *testing.T) {
 	deps := newTestDeps(t)
 	mux := NewRouter(deps)
 	cookie := loginAndGetCookie(t, mux)
 
-	baseline := getDisplayData(t, mux)
-	baselineFajrAdhan := baseline["adhan_times"].(map[string]any)["fajr"].(string)
-
-	req := defaultPrayerTimesRequest()
-	req.AzaanFajrMin = "5"
-	req.IqamahFajrMin = "15"
+	req := sampleTimesRequest()
 	postPrayerTimes(t, mux, cookie, req)
 
-	got := getDisplayData(t, mux)
-	gotFajrAdhan := got["adhan_times"].(map[string]any)["fajr"].(string)
-	gotFajrIqamah := got["iqamah_times"].(map[string]any)["fajr"].(string)
+	data := getDisplayData(t, mux)
+	adhan := data["adhan_times"].(map[string]any)
+	iqamah := data["iqamah_times"].(map[string]any)
 
-	wantAdhan := addMinutesHHMM(t, baselineFajrAdhan, 5)
-	if gotFajrAdhan != wantAdhan {
-		t.Errorf("Fajr azaan = %q, want %q (baseline + 5min azaan offset)", gotFajrAdhan, wantAdhan)
+	if adhan["fajr"] != "05:45" || adhan["dhuhr"] != "13:15" || adhan["maghrib"] != "19:45" {
+		t.Errorf("adhan_times = %v, want the exact saved azaan times", adhan)
 	}
-	wantIqamah := addMinutesHHMM(t, wantAdhan, 15)
-	if gotFajrIqamah != wantIqamah {
-		t.Errorf("Fajr iqamah = %q, want %q (offset azaan + 15min, not raw calculated + 15min)", gotFajrIqamah, wantIqamah)
+	if iqamah["fajr"] != "06:05" || iqamah["maghrib"] != "19:50" {
+		t.Errorf("iqamah_times = %v, want the exact saved iqamah times", iqamah)
+	}
+}
+
+// TestPrayerTimesRejectsInvalidFormat proves each azaan/iqamah field must be
+// a valid HH:MM time.
+func TestPrayerTimesRejectsInvalidFormat(t *testing.T) {
+	deps := newTestDeps(t)
+	mux := NewRouter(deps)
+	cookie := loginAndGetCookie(t, mux)
+
+	bad := sampleTimesRequest()
+	bad.AzaanFajrTime = "not-a-time"
+	body, _ := json.Marshal(bad)
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/admin/prayer-times", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.AddCookie(cookie)
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want 400; body=%s", rec.Code, rec.Body.String())
+	}
+}
+
+// TestGetPrayerTimesIncludesCalculatedReference proves the admin-only GET
+// endpoint surfaces today's astronomically calculated times as a read-only
+// reference alongside the saved exact times — helping the admin pick
+// sensible values without the app ever silently substituting them.
+func TestGetPrayerTimesIncludesCalculatedReference(t *testing.T) {
+	deps := newTestDeps(t)
+	mux := NewRouter(deps)
+	cookie := loginAndGetCookie(t, mux)
+
+	postPrayerTimes(t, mux, cookie, sampleTimesRequest())
+	resp := getPrayerTimes(t, mux, cookie)
+
+	if resp.AzaanFajrTime != "05:45" {
+		t.Errorf("AzaanFajrTime = %q, want the saved exact value 05:45", resp.AzaanFajrTime)
+	}
+	if resp.Calculated == nil {
+		t.Fatal("Calculated reference missing from GET prayer-times response")
+	}
+	if resp.Calculated.Fajr == "" || resp.Calculated.Fajr == resp.AzaanFajrTime {
+		t.Errorf("Calculated.Fajr = %q, want a distinct astronomically-calculated value, not the saved exact time", resp.Calculated.Fajr)
 	}
 }
 
@@ -95,18 +131,18 @@ func TestAzaanAndIqamahOffsetsAreIndependent(t *testing.T) {
 // the pilot's "timings changed overnight" report. The old bug wrote custom
 // times into a table keyed by calendar date, so they silently vanished the
 // next day. That code path is gone entirely now — prayer times are derived
-// solely from the persistent `settings` table on every request, so saved
-// offsets can never revert. This can't literally fast-forward a day inside
-// a unit test, but it proves the mechanism: repeated calls to display-data,
-// with no re-save in between, keep returning the saved offset forever
-// (there is nothing left that could expire).
+// solely from the persistent `settings` table on every request, so a saved
+// exact time can never revert. This can't literally fast-forward a day
+// inside a unit test, but it proves the mechanism: repeated calls to
+// display-data, with no re-save in between, keep returning the saved value
+// forever (there is nothing left that could expire).
 func TestPrayerTimesPersistAcrossRepeatedRequests(t *testing.T) {
 	deps := newTestDeps(t)
 	mux := NewRouter(deps)
 	cookie := loginAndGetCookie(t, mux)
 
-	req := defaultPrayerTimesRequest()
-	req.IqamahMaghribMin = "7"
+	req := sampleTimesRequest()
+	req.IqamahMaghribTime = "19:52"
 	postPrayerTimes(t, mux, cookie, req)
 
 	first := getDisplayData(t, mux)["iqamah_times"].(map[string]any)["maghrib"]
@@ -145,7 +181,7 @@ func TestJumuahTwoSlots(t *testing.T) {
 	mux := NewRouter(deps)
 	cookie := loginAndGetCookie(t, mux)
 
-	req := defaultPrayerTimesRequest()
+	req := sampleTimesRequest()
 	req.JumuahCount = 2
 	req.Jumuah1Iqamah = "13:00"
 	req.Jumuah2Iqamah = "14:15"
@@ -168,15 +204,4 @@ func TestJumuahTwoSlots(t *testing.T) {
 	if len(slots) != 1 {
 		t.Fatalf("after toggling to 1: jumuah_times = %v, want 1 slot", slots)
 	}
-}
-
-// addMinutesHHMM adds n minutes to an "HH:MM" string — sufficient for these
-// tests since offsets used are small and never cross midnight.
-func addMinutesHHMM(t *testing.T, hhmm string, n int) string {
-	t.Helper()
-	tm, err := time.Parse("15:04", hhmm)
-	if err != nil {
-		t.Fatalf("parse %q: %v", hhmm, err)
-	}
-	return tm.Add(time.Duration(n) * time.Minute).Format("15:04")
 }

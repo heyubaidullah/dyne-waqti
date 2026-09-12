@@ -18,24 +18,34 @@ func isHHMM(s string) bool {
 
 // --- POST /api/v1/admin/prayer-times ---
 //
-// Persistent, offset-based Azaan/Iqamah customization plus Jumu'ah — never
-// date-scoped, so nothing "reverts" the next calendar day (the bug the old
-// per-date prayer_schedules mechanism had).
+// Exact, fixed Azaan/Iqamah clock times plus Jumu'ah — an admin sets the
+// actual time, period, rather than an offset from a calculated time. This
+// is also what fixed the pilot's "timings changed overnight" bug: these
+// are persistent settings (never date-scoped), so nothing can revert them
+// the next calendar day the way the old per-date prayer_schedules table did.
 
 type prayerTimesRequest struct {
-	AzaanFajrMin     string `json:"azaan_fajr_min"`
-	AzaanDhuhrMin    string `json:"azaan_dhuhr_min"`
-	AzaanAsrMin      string `json:"azaan_asr_min"`
-	AzaanMaghribMin  string `json:"azaan_maghrib_min"`
-	AzaanIshaMin     string `json:"azaan_isha_min"`
-	IqamahFajrMin    string `json:"iqamah_fajr_min"`
-	IqamahDhuhrMin   string `json:"iqamah_dhuhr_min"`
-	IqamahAsrMin     string `json:"iqamah_asr_min"`
-	IqamahMaghribMin string `json:"iqamah_maghrib_min"`
-	IqamahIshaMin    string `json:"iqamah_isha_min"`
-	JumuahCount      int    `json:"jumuah_count"`
-	Jumuah1Iqamah    string `json:"jumuah_1_iqamah"` // HH:MM, optional
-	Jumuah2Iqamah    string `json:"jumuah_2_iqamah"` // HH:MM, optional
+	AzaanFajrTime     string `json:"azaan_fajr_time"`
+	AzaanDhuhrTime    string `json:"azaan_dhuhr_time"`
+	AzaanAsrTime      string `json:"azaan_asr_time"`
+	AzaanMaghribTime  string `json:"azaan_maghrib_time"`
+	AzaanIshaTime     string `json:"azaan_isha_time"`
+	IqamahFajrTime    string `json:"iqamah_fajr_time"`
+	IqamahDhuhrTime   string `json:"iqamah_dhuhr_time"`
+	IqamahAsrTime     string `json:"iqamah_asr_time"`
+	IqamahMaghribTime string `json:"iqamah_maghrib_time"`
+	IqamahIshaTime    string `json:"iqamah_isha_time"`
+	JumuahCount       int    `json:"jumuah_count"`
+	Jumuah1Iqamah     string `json:"jumuah_1_iqamah"` // HH:MM, optional
+	Jumuah2Iqamah     string `json:"jumuah_2_iqamah"` // HH:MM, optional
+}
+
+// prayerTimesResponse adds a read-only "what the calculator says for today"
+// reference alongside the admin's fixed times — helps them pick sensible
+// values without the app ever silently substituting the calculated time.
+type prayerTimesResponse struct {
+	prayerTimesRequest
+	Calculated *prayerTimesView `json:"calculated,omitempty"`
 }
 
 func (d *Deps) handleGetPrayerTimes(w http.ResponseWriter, r *http.Request) {
@@ -44,15 +54,24 @@ func (d *Deps) handleGetPrayerTimes(w http.ResponseWriter, r *http.Request) {
 		respondError(w, http.StatusInternalServerError, "failed to load settings")
 		return
 	}
-	respondJSON(w, http.StatusOK, prayerTimesRequest{
-		AzaanFajrMin: strconv.Itoa(s.AzaanOffsets.FajrMin), AzaanDhuhrMin: strconv.Itoa(s.AzaanOffsets.DhuhrMin),
-		AzaanAsrMin: strconv.Itoa(s.AzaanOffsets.AsrMin), AzaanMaghribMin: strconv.Itoa(s.AzaanOffsets.MaghribMin),
-		AzaanIshaMin:  strconv.Itoa(s.AzaanOffsets.IshaMin),
-		IqamahFajrMin: strconv.Itoa(s.IqamahOffsets.FajrMin), IqamahDhuhrMin: strconv.Itoa(s.IqamahOffsets.DhuhrMin),
-		IqamahAsrMin: strconv.Itoa(s.IqamahOffsets.AsrMin), IqamahMaghribMin: strconv.Itoa(s.IqamahOffsets.MaghribMin),
-		IqamahIshaMin: strconv.Itoa(s.IqamahOffsets.IshaMin),
-		JumuahCount:   s.JumuahCount, Jumuah1Iqamah: s.Jumuah1Iqamah, Jumuah2Iqamah: s.Jumuah2Iqamah,
-	})
+
+	resp := prayerTimesResponse{
+		prayerTimesRequest: prayerTimesRequest{
+			AzaanFajrTime: s.AzaanTimes.Fajr, AzaanDhuhrTime: s.AzaanTimes.Dhuhr, AzaanAsrTime: s.AzaanTimes.Asr,
+			AzaanMaghribTime: s.AzaanTimes.Maghrib, AzaanIshaTime: s.AzaanTimes.Isha,
+			IqamahFajrTime: s.IqamahTimes.Fajr, IqamahDhuhrTime: s.IqamahTimes.Dhuhr, IqamahAsrTime: s.IqamahTimes.Asr,
+			IqamahMaghribTime: s.IqamahTimes.Maghrib, IqamahIshaTime: s.IqamahTimes.Isha,
+			JumuahCount: s.JumuahCount, Jumuah1Iqamah: s.Jumuah1Iqamah, Jumuah2Iqamah: s.Jumuah2Iqamah,
+		},
+	}
+	if calculated, err := currentCalculatedTimes(s); err == nil {
+		resp.Calculated = &prayerTimesView{
+			Fajr: calculated.Fajr.Format("15:04"), Sunrise: calculated.Sunrise.Format("15:04"),
+			Dhuhr: calculated.Dhuhr.Format("15:04"), Asr: calculated.Asr.Format("15:04"),
+			Maghrib: calculated.Maghrib.Format("15:04"), Isha: calculated.Isha.Format("15:04"),
+		}
+	}
+	respondJSON(w, http.StatusOK, resp)
 }
 
 func (d *Deps) handleUpdatePrayerTimes(w http.ResponseWriter, r *http.Request) {
@@ -61,15 +80,15 @@ func (d *Deps) handleUpdatePrayerTimes(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	minuteFields := map[string]string{
-		"azaan_fajr_min": req.AzaanFajrMin, "azaan_dhuhr_min": req.AzaanDhuhrMin, "azaan_asr_min": req.AzaanAsrMin,
-		"azaan_maghrib_min": req.AzaanMaghribMin, "azaan_isha_min": req.AzaanIshaMin,
-		"iqamah_fajr_min": req.IqamahFajrMin, "iqamah_dhuhr_min": req.IqamahDhuhrMin, "iqamah_asr_min": req.IqamahAsrMin,
-		"iqamah_maghrib_min": req.IqamahMaghribMin, "iqamah_isha_min": req.IqamahIshaMin,
+	timeFields := map[string]string{
+		"azaan_fajr_time": req.AzaanFajrTime, "azaan_dhuhr_time": req.AzaanDhuhrTime, "azaan_asr_time": req.AzaanAsrTime,
+		"azaan_maghrib_time": req.AzaanMaghribTime, "azaan_isha_time": req.AzaanIshaTime,
+		"iqamah_fajr_time": req.IqamahFajrTime, "iqamah_dhuhr_time": req.IqamahDhuhrTime, "iqamah_asr_time": req.IqamahAsrTime,
+		"iqamah_maghrib_time": req.IqamahMaghribTime, "iqamah_isha_time": req.IqamahIshaTime,
 	}
-	for name, v := range minuteFields {
-		if _, err := strconv.Atoi(v); err != nil {
-			respondError(w, http.StatusBadRequest, name+" must be an integer")
+	for name, v := range timeFields {
+		if !isHHMM(v) {
+			respondError(w, http.StatusBadRequest, name+" must be HH:MM (24h)")
 			return
 		}
 	}
@@ -87,10 +106,10 @@ func (d *Deps) handleUpdatePrayerTimes(w http.ResponseWriter, r *http.Request) {
 	}
 
 	values := map[string]string{
-		SettingAzaanFajrMin: req.AzaanFajrMin, SettingAzaanDhuhrMin: req.AzaanDhuhrMin, SettingAzaanAsrMin: req.AzaanAsrMin,
-		SettingAzaanMaghribMin: req.AzaanMaghribMin, SettingAzaanIshaMin: req.AzaanIshaMin,
-		SettingIqamahFajrMin: req.IqamahFajrMin, SettingIqamahDhuhrMin: req.IqamahDhuhrMin, SettingIqamahAsrMin: req.IqamahAsrMin,
-		SettingIqamahMaghribMin: req.IqamahMaghribMin, SettingIqamahIshaMin: req.IqamahIshaMin,
+		SettingAzaanFajrTime: req.AzaanFajrTime, SettingAzaanDhuhrTime: req.AzaanDhuhrTime, SettingAzaanAsrTime: req.AzaanAsrTime,
+		SettingAzaanMaghribTime: req.AzaanMaghribTime, SettingAzaanIshaTime: req.AzaanIshaTime,
+		SettingIqamahFajrTime: req.IqamahFajrTime, SettingIqamahDhuhrTime: req.IqamahDhuhrTime, SettingIqamahAsrTime: req.IqamahAsrTime,
+		SettingIqamahMaghribTime: req.IqamahMaghribTime, SettingIqamahIshaTime: req.IqamahIshaTime,
 		SettingJumuahCount: strconv.Itoa(req.JumuahCount), SettingJumuah1Iqamah: req.Jumuah1Iqamah,
 		SettingJumuah2Iqamah: req.Jumuah2Iqamah,
 	}
