@@ -49,6 +49,9 @@ export const api = {
 
   updatePrayerTimes: (payload) => request('/admin/prayer-times', jsonBody(payload)),
 
+  getDisplaySettings: () => request('/admin/display-settings'),
+  updateDisplaySettings: (settings) => request('/admin/display-settings', jsonBody(settings)),
+
   setBlackout: (active) => request('/admin/blackout', jsonBody({ active })),
   publishJanazah: (notice) => request('/admin/janazah', jsonBody({ action: 'publish', ...notice })),
   dismissJanazah: () => request('/admin/janazah', jsonBody({ action: 'dismiss' })),

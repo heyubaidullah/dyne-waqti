@@ -38,6 +38,23 @@ type prayerTimesRequest struct {
 	Jumuah2Iqamah    string `json:"jumuah_2_iqamah"` // HH:MM, optional
 }
 
+func (d *Deps) handleGetPrayerTimes(w http.ResponseWriter, r *http.Request) {
+	s, err := loadDisplaySettings(d.DB)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "failed to load settings")
+		return
+	}
+	respondJSON(w, http.StatusOK, prayerTimesRequest{
+		AzaanFajrMin: strconv.Itoa(s.AzaanOffsets.FajrMin), AzaanDhuhrMin: strconv.Itoa(s.AzaanOffsets.DhuhrMin),
+		AzaanAsrMin: strconv.Itoa(s.AzaanOffsets.AsrMin), AzaanMaghribMin: strconv.Itoa(s.AzaanOffsets.MaghribMin),
+		AzaanIshaMin:  strconv.Itoa(s.AzaanOffsets.IshaMin),
+		IqamahFajrMin: strconv.Itoa(s.IqamahOffsets.FajrMin), IqamahDhuhrMin: strconv.Itoa(s.IqamahOffsets.DhuhrMin),
+		IqamahAsrMin: strconv.Itoa(s.IqamahOffsets.AsrMin), IqamahMaghribMin: strconv.Itoa(s.IqamahOffsets.MaghribMin),
+		IqamahIshaMin: strconv.Itoa(s.IqamahOffsets.IshaMin),
+		JumuahCount:   s.JumuahCount, Jumuah1Iqamah: s.Jumuah1Iqamah, Jumuah2Iqamah: s.Jumuah2Iqamah,
+	})
+}
+
 func (d *Deps) handleUpdatePrayerTimes(w http.ResponseWriter, r *http.Request) {
 	var req prayerTimesRequest
 	if !decodeJSON(w, r, &req) {
@@ -166,6 +183,7 @@ type adminSlideView struct {
 	IsActive           bool   `json:"is_active"`
 	ExpirationDate     string `json:"expiration_date,omitempty"`
 	DisplayDurationSec int    `json:"display_duration_sec"`
+	DisplayMode        string `json:"display_mode"`
 }
 
 func (d *Deps) handleListAllSlides(w http.ResponseWriter, r *http.Request) {
@@ -180,6 +198,7 @@ func (d *Deps) handleListAllSlides(w http.ResponseWriter, r *http.Request) {
 			ID: s.ID, Title: s.Title, Type: s.Type, ContentURLOrText: s.ContentURLOrText,
 			ArabicText: s.ArabicText.String, IsActive: s.IsActive,
 			ExpirationDate: s.ExpirationDate.String, DisplayDurationSec: s.DisplayDurationSec,
+			DisplayMode: s.DisplayMode,
 		})
 	}
 	respondJSON(w, http.StatusOK, views)
