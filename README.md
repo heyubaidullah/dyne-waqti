@@ -6,13 +6,13 @@ Janazah alerts) and a password-protected `/admin` panel for managing it.
 
 **Status: v1.1.0** — the pilot-feedback release, built from the first live
 masjid deployment (see [CHANGELOG.md](CHANGELOG.md) for the full list):
-independent Azaan/Iqamah offsets, Jumu'ah 1/2 support, a Display Settings
-panel (font size, Gregorian date, silence-screen duration, "Powered by
-Waqti" attribution banner, opt-in weather in °F or °C), Full Screen/In
-Screen flyer display modes, an in-admin Help/FAQ page, and a
-`--reset-passphrase` recovery flow. Not yet done: a live NSSM/Windows-
-service run on real hardware and a genuine multi-day soak test of
-`/display`.
+exact, independently-set Azaan/Iqamah clock times per prayer, Jumu'ah 1/2
+support, a Display Settings panel (font size, Gregorian date,
+silence-screen duration, "Powered by Waqti" attribution banner, opt-in
+weather in °F or °C), Full Screen/In Screen flyer display modes, an
+in-admin Help/FAQ page, and a `--reset-passphrase` recovery flow. Not yet
+done: a live NSSM/Windows-service run on real hardware and a genuine
+multi-day soak test of `/display`.
 
 ## Requirements
 
@@ -85,8 +85,8 @@ Mosque-specific settings (timezone, coordinates, calculation method, Asr
 juristic method, Hijri adjustment) live in the `settings` table and are
 seeded with safe defaults (UTC, 0/0, ISNA) on first run — set real values
 from the `/admin` panel's settings section (or directly via `POST
-/api/v1/admin/settings`). Per-prayer Azaan/Iqamah offsets and Jumu'ah
-1/2 times live under `/admin`'s Prayer Times section (`GET`/`POST
+/api/v1/admin/settings`). Exact per-prayer Azaan/Iqamah clock times and
+Jumu'ah 1/2 times live under `/admin`'s Prayer Times section (`GET`/`POST
 /api/v1/admin/prayer-times`); visual/kiosk preferences (font size,
 Gregorian date, silence-screen duration, attribution banner, opt-in
 weather) live under Display Settings (`GET`/`POST

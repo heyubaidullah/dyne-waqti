@@ -33,9 +33,13 @@ Pilot-feedback release, built from the first live masjid deployment.
 
 ### Added
 
-- Independent Azaan offset per prayer, separate from the existing Iqamah
-  offset — Iqamah is now offset from the (possibly customized) Azaan
-  time rather than the raw calculated time, matching real masjid practice.
+- Exact Azaan and Iqamah clock times, set independently per prayer —
+  replaces the old single Iqamah-offset-from-calculated-time model.
+  Non-technical staff type the actual time (e.g. "5:47 AM"), same as
+  reading it off a printed prayer schedule; today's astronomically
+  calculated time is shown alongside as a reference only, never applied
+  automatically. Whatever is saved shows up exactly as entered, every
+  day, until changed again.
 - Jumu'ah 1 / Jumu'ah 2 support — masjids that hold a second Friday
   prayer can add a second time slot; the display renders one or two rows
   accordingly.
@@ -53,8 +57,7 @@ Pilot-feedback release, built from the first live masjid deployment.
 - Full Screen / In Screen display mode for image flyers — In Screen
   shows the flyer above the persistent prayer-times ribbon instead of
   filling the whole screen.
-- In-admin Help/FAQ page, plus inline tooltips on the timezone and
-  Azaan/Iqamah offset fields.
+- In-admin Help/FAQ page, plus an inline tooltip on the timezone field.
 - `--reset-passphrase` CLI flag (plus `scripts\Reset-Passphrase.bat` on
   Windows) to recover a lost admin passphrase without touching any other
   data, and a "Forgot the passphrase?" hint on the login screen pointing
