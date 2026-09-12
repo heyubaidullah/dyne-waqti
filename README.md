@@ -66,6 +66,14 @@ Note it down — it is never written to disk in plaintext and is not shown
 again. Log in at `/admin`. (There's currently no in-UI way to change the
 passphrase after the fact — a known gap, not yet built.)
 
+**Forgot the passphrase?** Run `waqti` (or `waqti.exe`) with
+`--reset-passphrase` — it clears the stored passphrase, generates and
+prints a brand-new one, then exits without starting the server. Nothing
+else (settings, prayer times, slides) is touched. On Windows, running as
+a background service, use `scripts\Reset-Passphrase.bat` instead — it
+stops the service, resets, prints the new passphrase, and restarts the
+service for you.
+
 ## Configuration
 
 | Env var | Default | Purpose |

@@ -28,6 +28,10 @@ const FAQS = [
     q: 'What does Full Screen vs In Screen mean for flyers?',
     a: "Full Screen fills the entire display with your flyer image for its set duration, then shows the full prayer-times page. In Screen shows your flyer in the upper part of the screen with the prayer-times ribbon visible underneath at the same time, and never switches to a separate full-screen timings page.",
   },
+  {
+    q: 'What if we forget the admin passphrase?',
+    a: 'On the login screen, click "Forgot the passphrase?" for instructions. Whoever manages the computer running Waqti can run Reset-Passphrase.bat (Windows) or start Waqti with --reset-passphrase, which prints a brand-new passphrase without touching any settings, prayer times, or slides.',
+  },
 ]
 
 export default function HelpPage({ onBack, onLogout }) {
