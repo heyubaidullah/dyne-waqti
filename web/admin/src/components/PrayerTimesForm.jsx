@@ -3,12 +3,8 @@ import Paper from '@mui/material/Paper'
 import Typography from '@mui/material/Typography'
 import Stack from '@mui/material/Stack'
 import Grid from '@mui/material/Grid'
-import TextField from '@mui/material/TextField'
 import Button from '@mui/material/Button'
 import Alert from '@mui/material/Alert'
-import Tooltip from '@mui/material/Tooltip'
-import IconButton from '@mui/material/IconButton'
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import FormControlLabel from '@mui/material/FormControlLabel'
 import Switch from '@mui/material/Switch'
 import { api } from '../api.js'
@@ -22,17 +18,7 @@ const PRAYERS = [
   ['isha', 'Isha'],
 ]
 
-function InfoTip({ text }) {
-  return (
-    <Tooltip title={text} arrow>
-      <IconButton size="small" sx={{ p: 0.25 }} aria-label="more info">
-        <InfoOutlinedIcon fontSize="inherit" />
-      </IconButton>
-    </Tooltip>
-  )
-}
-
-export default function PrayerTimesForm({ prayerTimes, displayData, runGuarded }) {
+export default function PrayerTimesForm({ prayerTimes, runGuarded }) {
   const [form, setForm] = useState(() => ({ ...prayerTimes }))
   const [jumuah2Enabled, setJumuah2Enabled] = useState(prayerTimes.jumuah_count === 2)
   const [jumuah1Auto, setJumuah1Auto] = useState(!prayerTimes.jumuah_1_iqamah)
@@ -41,8 +27,8 @@ export default function PrayerTimesForm({ prayerTimes, displayData, runGuarded }
   const [error, setError] = useState(null)
   const [saved, setSaved] = useState(false)
 
-  const setField = (key) => (e) => {
-    setForm({ ...form, [key]: e.target.value })
+  const setTime = (key) => (value) => {
+    setForm({ ...form, [key]: value })
     setSaved(false)
   }
 
@@ -72,37 +58,22 @@ export default function PrayerTimesForm({ prayerTimes, displayData, runGuarded }
       <Typography variant="h6" gutterBottom>
         Prayer times
       </Typography>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        Enter the exact Azaan and Iqamah time for each prayer — whatever you type is exactly what shows up on the display, every day, until you change it here again. "Calculated" below each prayer is today's astronomical time, shown only as a reference (e.g. for Fajr and Maghrib, which shift with sunrise/sunset) — it's never applied automatically.
+      </Typography>
       <form onSubmit={save}>
-        <Grid container spacing={2}>
+        <Grid container spacing={3}>
           {PRAYERS.map(([key, label]) => (
             <Grid key={key} size={{ xs: 12, sm: 6 }}>
               <Typography variant="subtitle2">{label}</Typography>
-              {displayData?.adhan_times?.[key] && (
+              {prayerTimes.calculated?.[key] && (
                 <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 0.5 }}>
-                  Azaan (calculated): {formatTime12h(displayData.adhan_times[key])}
+                  Calculated: {formatTime12h(prayerTimes.calculated[key])}
                 </Typography>
               )}
-              <Stack direction="row" spacing={2}>
-                <TextField
-                  label="Azaan offset (min)"
-                  type="number"
-                  value={form[`azaan_${key}_min`]}
-                  onChange={setField(`azaan_${key}_min`)}
-                  size="small"
-                  disabled={busy}
-                  sx={{ width: 170 }}
-                  slotProps={{ input: { endAdornment: <InfoTip text="Minutes after the calculated prayer time that Azaan is called. Leave at 0 to announce Azaan exactly at the calculated time." /> } }}
-                />
-                <TextField
-                  label="Iqamah offset (min)"
-                  type="number"
-                  value={form[`iqamah_${key}_min`]}
-                  onChange={setField(`iqamah_${key}_min`)}
-                  size="small"
-                  disabled={busy}
-                  sx={{ width: 170 }}
-                  slotProps={{ input: { endAdornment: <InfoTip text="Minutes after Azaan is called that Iqamah (the second call to start the prayer) is held." /> } }}
-                />
+              <Stack direction="row" spacing={2} flexWrap="wrap">
+                <TimeField12h label="Azaan" value={form[`azaan_${key}_time`]} onChange={setTime(`azaan_${key}_time`)} disabled={busy} />
+                <TimeField12h label="Iqamah" value={form[`iqamah_${key}_time`]} onChange={setTime(`iqamah_${key}_time`)} disabled={busy} />
               </Stack>
             </Grid>
           ))}

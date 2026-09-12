@@ -13,8 +13,8 @@ const FAQS = [
     a: "In Location & calculation settings, pick your city from the Timezone dropdown (or type any standard timezone name, e.g. America/Chicago). Then enter your masjid's Latitude and Longitude — these are used together to calculate accurate prayer times, so both need to be correct.",
   },
   {
-    q: 'What do the Azaan and Iqamah offsets mean?',
-    a: 'Each prayer has two independent offsets, both measured in minutes. The Azaan offset is how many minutes after the calculated prayer time Azaan is called (0 means exactly at the calculated time). The Iqamah offset is how many minutes after Azaan is called that Iqamah (the start of prayer) happens. Changing one never changes the other.',
+    q: 'How do the Azaan and Iqamah times work?',
+    a: "In the Prayer times section, type the exact time Azaan is called and the exact time Iqamah starts, for each prayer — whatever you enter is exactly what shows on the display, every day, until you come back and change it. \"Calculated\" underneath each prayer is only a reference (today's astronomical time from your location) to help you decide what to set — it's never applied automatically. Because sunrise and sunset shift through the year, Fajr and Maghrib especially may need updating every few weeks; the other prayers drift more slowly.",
   },
   {
     q: "What does the Jumu'ah 1 / 2 toggle do?",
@@ -22,7 +22,7 @@ const FAQS = [
   },
   {
     q: 'The prayer timings on the display look wrong — what should I check?',
-    a: "First check Location & calculation settings: timezone, latitude/longitude, and calculation method. Next check the Prayer times section for any Azaan/Iqamah offsets that may have been set. If the Hijri date looks off by a day, use the Hijri date adjustment field. If timings were correct yesterday and wrong today with nothing changed, please let support know — that specific symptom is a bug we've fixed but want to keep hearing about.",
+    a: "First check the Prayer times section — since these are exact times you set yourself, a wrong time there is usually just due for an update (compare against the \"Calculated\" reference shown under each prayer). Next check Location & calculation settings: timezone, latitude/longitude, and calculation method, which drive that calculated reference. If the Hijri date looks off by a day, use the Hijri date adjustment field there too. If a time you set changes on its own with nothing touched, please let support know — that specific symptom is a bug we've fixed but want to keep hearing about.",
   },
   {
     q: 'What does Full Screen vs In Screen mean for flyers?',

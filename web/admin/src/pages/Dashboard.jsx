@@ -92,7 +92,7 @@ export default function Dashboard({ onAuthError, onLogout, onShowHelp }) {
       <Container maxWidth="md" sx={{ flex: 1, py: 4 }}>
         <Stack spacing={3}>
           <LogoUpload logoUrl={displayData.logo_url} runGuarded={runGuarded} />
-          <PrayerTimesForm prayerTimes={prayerTimes} displayData={displayData} runGuarded={runGuarded} />
+          <PrayerTimesForm prayerTimes={prayerTimes} runGuarded={runGuarded} />
           <SettingsForm settings={settings} runGuarded={runGuarded} />
           <DisplaySettingsForm displaySettings={displaySettings} runGuarded={runGuarded} />
           <SlideManager slides={slides} runGuarded={runGuarded} />
