@@ -92,14 +92,17 @@ func (d *Deps) handleDisplayData(w http.ResponseWriter, r *http.Request) {
 	dateStr := now.Format("2006-01-02")
 
 	// Sunrise has no admin override — it's informational only, always the
-	// astronomically calculated value. Azaan/Iqamah are the admin's exact,
-	// fixed clock times (settings.AzaanTimes/IqamahTimes below), not derived
-	// from this calculation at all.
+	// astronomically calculated value. Fajr/Dhuhr/Asr/Isha Azaan+Iqamah are
+	// the admin's exact, fixed clock times (settings.AzaanTimes/IqamahTimes),
+	// not derived from this calculation. Maghrib is the one exception: its
+	// Azaan always tracks the calculated sunset time (see below).
 	calculated, err := currentCalculatedTimes(settings)
 	if err != nil {
 		respondError(w, http.StatusInternalServerError, "prayer time calculation failed: "+err.Error())
 		return
 	}
+	maghribAzaan := calculated.Maghrib.Format("15:04")
+	maghribIqamah := calculated.Maghrib.Add(time.Duration(settings.IqamahMaghribOffsetMin) * time.Minute).Format("15:04")
 
 	jumuah1 := settings.Jumuah1Iqamah
 	if jumuah1 == "" {
@@ -118,7 +121,7 @@ func (d *Deps) handleDisplayData(w http.ResponseWriter, r *http.Request) {
 		Fajr:    settings.IqamahTimes.Fajr,
 		Dhuhr:   settings.IqamahTimes.Dhuhr,
 		Asr:     settings.IqamahTimes.Asr,
-		Maghrib: settings.IqamahTimes.Maghrib,
+		Maghrib: maghribIqamah,
 		Isha:    settings.IqamahTimes.Isha,
 		Jumuah:  jumuah1,
 	}
@@ -172,7 +175,7 @@ func (d *Deps) handleDisplayData(w http.ResponseWriter, r *http.Request) {
 		AdhanTimes: prayerTimesView{
 			Fajr: settings.AzaanTimes.Fajr, Sunrise: calculated.Sunrise.Format("15:04"),
 			Dhuhr: settings.AzaanTimes.Dhuhr, Asr: settings.AzaanTimes.Asr,
-			Maghrib: settings.AzaanTimes.Maghrib, Isha: settings.AzaanTimes.Isha,
+			Maghrib: maghribAzaan, Isha: settings.AzaanTimes.Isha,
 		},
 		IqamahTimes:             iqamah,
 		JumuahTimes:             jumuahTimes,

@@ -12,29 +12,32 @@ import (
 
 // Setting keys stored in the generic `settings` key/value table.
 const (
-	SettingTimezone           = "timezone"
-	SettingLatitude           = "latitude"
-	SettingLongitude          = "longitude"
-	SettingCalcMethod         = "calc_method"
-	SettingAsrMethod          = "asr_method"
-	SettingHijriAdjustDays    = "hijri_adjust_days"
-	SettingBlackout           = "blackout"
-	SettingAzaanFajrTime      = "azaan_fajr_time"
-	SettingAzaanDhuhrTime     = "azaan_dhuhr_time"
-	SettingAzaanAsrTime       = "azaan_asr_time"
-	SettingAzaanMaghribTime   = "azaan_maghrib_time"
-	SettingAzaanIshaTime      = "azaan_isha_time"
-	SettingIqamahFajrTime     = "iqamah_fajr_time"
-	SettingIqamahDhuhrTime    = "iqamah_dhuhr_time"
-	SettingIqamahAsrTime      = "iqamah_asr_time"
-	SettingIqamahMaghribTime  = "iqamah_maghrib_time"
-	SettingIqamahIshaTime     = "iqamah_isha_time"
-	SettingJumuahCount        = "jumuah_count"
-	SettingJumuah1Iqamah      = "jumuah_1_iqamah"
-	SettingJumuah2Iqamah      = "jumuah_2_iqamah"
-	SettingLogoURL            = "logo_url"
-	SettingLogoHeightPx       = "logo_height_px"
-	SettingTimingsDurationSec = "timings_duration_sec"
+	SettingTimezone        = "timezone"
+	SettingLatitude        = "latitude"
+	SettingLongitude       = "longitude"
+	SettingCalcMethod      = "calc_method"
+	SettingAsrMethod       = "asr_method"
+	SettingHijriAdjustDays = "hijri_adjust_days"
+	SettingBlackout        = "blackout"
+	SettingAzaanFajrTime   = "azaan_fajr_time"
+	SettingAzaanDhuhrTime  = "azaan_dhuhr_time"
+	SettingAzaanAsrTime    = "azaan_asr_time"
+	SettingAzaanIshaTime   = "azaan_isha_time"
+	SettingIqamahFajrTime  = "iqamah_fajr_time"
+	SettingIqamahDhuhrTime = "iqamah_dhuhr_time"
+	SettingIqamahAsrTime   = "iqamah_asr_time"
+	SettingIqamahIshaTime  = "iqamah_isha_time"
+	// Maghrib is the one prayer where Azaan can't sensibly be a fixed clock
+	// time — sunset itself moves by minutes per day. Azaan always tracks
+	// the calculated sunset time automatically; only the Iqamah delay after
+	// it is admin-configurable.
+	SettingIqamahMaghribOffsetMin = "iqamah_maghrib_offset_min"
+	SettingJumuahCount            = "jumuah_count"
+	SettingJumuah1Iqamah          = "jumuah_1_iqamah"
+	SettingJumuah2Iqamah          = "jumuah_2_iqamah"
+	SettingLogoURL                = "logo_url"
+	SettingLogoHeightPx           = "logo_height_px"
+	SettingTimingsDurationSec     = "timings_duration_sec"
 
 	// Display Settings — visual/kiosk preferences, independent of the
 	// location/calculation settings above.
@@ -71,13 +74,12 @@ var defaultSettings = map[string]string{
 	SettingAzaanFajrTime:           "06:00",
 	SettingAzaanDhuhrTime:          "13:15",
 	SettingAzaanAsrTime:            "17:00",
-	SettingAzaanMaghribTime:        "19:45",
 	SettingAzaanIshaTime:           "21:00",
 	SettingIqamahFajrTime:          "06:20",
 	SettingIqamahDhuhrTime:         "13:25",
 	SettingIqamahAsrTime:           "17:10",
-	SettingIqamahMaghribTime:       "19:50",
 	SettingIqamahIshaTime:          "21:15",
+	SettingIqamahMaghribOffsetMin:  "5",
 	SettingJumuahCount:             "1",
 	SettingJumuah1Iqamah:           "",
 	SettingJumuah2Iqamah:           "",
@@ -119,16 +121,18 @@ type JumuahSlot struct {
 	Iqamah string // HH:MM
 }
 
-// PrayerTimeSet holds one HH:MM clock time per daily prayer — an admin's
-// exact, fixed schedule (for either Azaan or Iqamah), not a formula. It
-// stays exactly what was entered until an admin changes it again; nothing
-// recalculates it in the background.
+// PrayerTimeSet holds one HH:MM clock time per prayer — an admin's exact,
+// fixed schedule (for either Azaan or Iqamah), not a formula. It stays
+// exactly what was entered until an admin changes it again; nothing
+// recalculates it in the background. Maghrib is deliberately excluded:
+// sunset moves too much day to day for a fixed clock time to stay
+// accurate, so its Azaan always tracks the calculated sunset instead — see
+// IqamahMaghribOffsetMin below.
 type PrayerTimeSet struct {
-	Fajr    string
-	Dhuhr   string
-	Asr     string
-	Maghrib string
-	Isha    string
+	Fajr  string
+	Dhuhr string
+	Asr   string
+	Isha  string
 }
 
 // DisplaySettings is the resolved, typed view of the settings table used to
@@ -146,6 +150,7 @@ type DisplaySettings struct {
 	TimingsDurationSec      int
 	AzaanTimes              PrayerTimeSet
 	IqamahTimes             PrayerTimeSet
+	IqamahMaghribOffsetMin  int
 	JumuahCount             int
 	Jumuah1Iqamah           string
 	Jumuah2Iqamah           string
@@ -199,19 +204,18 @@ func loadDisplaySettings(database *sql.DB) (DisplaySettings, error) {
 		LogoHeightPx:       atoiOr(get(SettingLogoHeightPx, "150"), 150),
 		TimingsDurationSec: atoiOr(get(SettingTimingsDurationSec, "15"), 15),
 		AzaanTimes: PrayerTimeSet{
-			Fajr:    get(SettingAzaanFajrTime, "06:00"),
-			Dhuhr:   get(SettingAzaanDhuhrTime, "13:15"),
-			Asr:     get(SettingAzaanAsrTime, "17:00"),
-			Maghrib: get(SettingAzaanMaghribTime, "19:45"),
-			Isha:    get(SettingAzaanIshaTime, "21:00"),
+			Fajr:  get(SettingAzaanFajrTime, "06:00"),
+			Dhuhr: get(SettingAzaanDhuhrTime, "13:15"),
+			Asr:   get(SettingAzaanAsrTime, "17:00"),
+			Isha:  get(SettingAzaanIshaTime, "21:00"),
 		},
 		IqamahTimes: PrayerTimeSet{
-			Fajr:    get(SettingIqamahFajrTime, "06:20"),
-			Dhuhr:   get(SettingIqamahDhuhrTime, "13:25"),
-			Asr:     get(SettingIqamahAsrTime, "17:10"),
-			Maghrib: get(SettingIqamahMaghribTime, "19:50"),
-			Isha:    get(SettingIqamahIshaTime, "21:15"),
+			Fajr:  get(SettingIqamahFajrTime, "06:20"),
+			Dhuhr: get(SettingIqamahDhuhrTime, "13:25"),
+			Asr:   get(SettingIqamahAsrTime, "17:10"),
+			Isha:  get(SettingIqamahIshaTime, "21:15"),
 		},
+		IqamahMaghribOffsetMin:  atoiOr(get(SettingIqamahMaghribOffsetMin, "5"), 5),
 		JumuahCount:             jumuahCount,
 		Jumuah1Iqamah:           get(SettingJumuah1Iqamah, ""),
 		Jumuah2Iqamah:           get(SettingJumuah2Iqamah, ""),

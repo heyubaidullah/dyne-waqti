@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 )
 
 func getDisplayData(t *testing.T, mux http.Handler) map[string]any {
@@ -54,16 +55,19 @@ func getPrayerTimes(t *testing.T, mux http.Handler, cookie *http.Cookie) prayerT
 
 func sampleTimesRequest() prayerTimesRequest {
 	return prayerTimesRequest{
-		AzaanFajrTime: "05:45", AzaanDhuhrTime: "13:15", AzaanAsrTime: "17:00", AzaanMaghribTime: "19:45", AzaanIshaTime: "21:00",
-		IqamahFajrTime: "06:05", IqamahDhuhrTime: "13:25", IqamahAsrTime: "17:10", IqamahMaghribTime: "19:50", IqamahIshaTime: "21:15",
-		JumuahCount: 1,
+		AzaanFajrTime: "05:45", AzaanDhuhrTime: "13:15", AzaanAsrTime: "17:00", AzaanIshaTime: "21:00",
+		IqamahFajrTime: "06:05", IqamahDhuhrTime: "13:25", IqamahAsrTime: "17:10", IqamahIshaTime: "21:15",
+		IqamahMaghribOffsetMin: "5",
+		JumuahCount:            1,
 	}
 }
 
 // TestPrayerTimesAreExactNotCalculated proves the admin's saved clock times
 // are shown verbatim on the public display — no offset, no chaining off a
 // calculated value. This is the whole point of the exact-time model: what
-// you type is what shows up.
+// you type is what shows up. Maghrib is the deliberate exception (see
+// TestMaghribTracksCalculatedSunset) since sunset itself moves too much
+// day to day for a fixed clock time.
 func TestPrayerTimesAreExactNotCalculated(t *testing.T) {
 	deps := newTestDeps(t)
 	mux := NewRouter(deps)
@@ -76,12 +80,48 @@ func TestPrayerTimesAreExactNotCalculated(t *testing.T) {
 	adhan := data["adhan_times"].(map[string]any)
 	iqamah := data["iqamah_times"].(map[string]any)
 
-	if adhan["fajr"] != "05:45" || adhan["dhuhr"] != "13:15" || adhan["maghrib"] != "19:45" {
+	if adhan["fajr"] != "05:45" || adhan["dhuhr"] != "13:15" {
 		t.Errorf("adhan_times = %v, want the exact saved azaan times", adhan)
 	}
-	if iqamah["fajr"] != "06:05" || iqamah["maghrib"] != "19:50" {
+	if iqamah["fajr"] != "06:05" {
 		t.Errorf("iqamah_times = %v, want the exact saved iqamah times", iqamah)
 	}
+}
+
+// TestMaghribTracksCalculatedSunset proves Maghrib Azaan is always the
+// live calculated sunset time (never a fixed admin-entered clock time,
+// unlike every other prayer), and Iqamah is that sunset plus the admin's
+// configured delay.
+func TestMaghribTracksCalculatedSunset(t *testing.T) {
+	deps := newTestDeps(t)
+	mux := NewRouter(deps)
+	cookie := loginAndGetCookie(t, mux)
+
+	req := sampleTimesRequest()
+	req.IqamahMaghribOffsetMin = "7"
+	postPrayerTimes(t, mux, cookie, req)
+
+	ptResp := getPrayerTimes(t, mux, cookie)
+	data := getDisplayData(t, mux)
+	adhan := data["adhan_times"].(map[string]any)
+	iqamah := data["iqamah_times"].(map[string]any)
+
+	if adhan["maghrib"] != ptResp.Calculated.Maghrib {
+		t.Errorf("adhan maghrib = %v, want the calculated sunset time %v", adhan["maghrib"], ptResp.Calculated.Maghrib)
+	}
+	wantIqamah := addMinutesHHMM(t, ptResp.Calculated.Maghrib, 7)
+	if iqamah["maghrib"] != wantIqamah {
+		t.Errorf("iqamah maghrib = %v, want calculated sunset + 7min = %v", iqamah["maghrib"], wantIqamah)
+	}
+}
+
+func addMinutesHHMM(t *testing.T, hhmm string, n int) string {
+	t.Helper()
+	tm, err := time.Parse("15:04", hhmm)
+	if err != nil {
+		t.Fatalf("parse %q: %v", hhmm, err)
+	}
+	return tm.Add(time.Duration(n) * time.Minute).Format("15:04")
 }
 
 // TestPrayerTimesRejectsInvalidFormat proves each azaan/iqamah field must be
@@ -142,14 +182,14 @@ func TestPrayerTimesPersistAcrossRepeatedRequests(t *testing.T) {
 	cookie := loginAndGetCookie(t, mux)
 
 	req := sampleTimesRequest()
-	req.IqamahMaghribTime = "19:52"
+	req.IqamahFajrTime = "06:09"
 	postPrayerTimes(t, mux, cookie, req)
 
-	first := getDisplayData(t, mux)["iqamah_times"].(map[string]any)["maghrib"]
+	first := getDisplayData(t, mux)["iqamah_times"].(map[string]any)["fajr"]
 	for i := 0; i < 3; i++ {
-		again := getDisplayData(t, mux)["iqamah_times"].(map[string]any)["maghrib"]
+		again := getDisplayData(t, mux)["iqamah_times"].(map[string]any)["fajr"]
 		if again != first {
-			t.Fatalf("call %d: maghrib iqamah = %v, want unchanged %v", i, again, first)
+			t.Fatalf("call %d: fajr iqamah = %v, want unchanged %v", i, again, first)
 		}
 	}
 }
