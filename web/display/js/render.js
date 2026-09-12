@@ -1,6 +1,7 @@
 import * as dom from './dom.js';
 import * as carousel from './carousel.js';
 import { PRAYER_ORDER, jummahSlots } from './state.js';
+import { formatCountdown } from './format.js';
 
 const PRAYER_LABELS = { fajr: 'Fajr', dhuhr: 'Dhuhr', asr: 'Asr', maghrib: 'Maghrib', isha: 'Isha' };
 
@@ -36,10 +37,11 @@ let currentStateName = null;
 // machine's own system timezone — a misconfigured or unset OS timezone on
 // bare kiosk hardware must never affect what clock time is shown.
 let currentTimezone = 'UTC';
-// Whether a logo has been uploaded — the <img> only ever shows alongside
-// the rest of the base layer (Idle/Countdown), never during
-// Silence/Blackout/Emergency.
-let hasLogo = false;
+
+// Footer banner logo height is capped well below the corner logo's old
+// ceiling — the banner is a slim, fixed-role bar, not a full idle-group
+// surface with room to spare.
+const BANNER_LOGO_MAX_PX = 40;
 
 function hideAllOverlays() {
   dom.stateCountdown.classList.add('hidden');
@@ -51,8 +53,7 @@ function hideAllOverlays() {
 // Idle and Countdown together form the "idle group": Countdown is just a
 // semi-transparent overlay on top of whichever full-screen idle phase
 // (flyer or timings) carousel.js already has showing, frozen in place —
-// it never hides or resets that layer. Only entering/leaving the group
-// as a whole touches the idle layer or the logo.
+// it never hides or resets that layer.
 function isIdleGroup(stateName) {
   return stateName === 'IDLE' || stateName === 'COUNTDOWN';
 }
@@ -74,17 +75,15 @@ export function applyState(result, nowMs) {
 
   if (enteringIdleGroup) {
     if (!wasInIdleGroup) carousel.restart(nowMs);
-    dom.logoEl.classList.toggle('hidden', !hasLogo);
     if (result.state === 'COUNTDOWN') dom.stateCountdown.classList.remove('hidden');
     return;
   }
 
-  // Leaving the idle group entirely — hide all three idle sub-views and
-  // the masjid logo; the target state's own overlay takes over completely.
+  // Leaving the idle group entirely — hide all three idle sub-views; the
+  // target state's own overlay takes over completely.
   dom.idleFlyer.classList.add('hidden');
   dom.idleText.classList.add('hidden');
   dom.idleTimings.classList.add('hidden');
-  dom.logoEl.classList.add('hidden');
 
   switch (result.state) {
     case 'SILENCE':
@@ -133,13 +132,6 @@ function formatTime12h(hhmm) {
   return `${h}:${match[2]} ${period}`;
 }
 
-function formatCountdown(seconds) {
-  const s = Math.max(0, Math.round(seconds));
-  const m = Math.floor(s / 60);
-  const sec = s % 60;
-  return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
-}
-
 // Called every second — only touches textContent on already-cached
 // elements, never queries the DOM or allocates persistent objects.
 export function tickUpdate(result, now) {
@@ -176,17 +168,6 @@ export function updateStaticFields(data) {
   currentTimezone = data.timezone;
 
   document.getElementById('app').dataset.fontScale = data.display_font_scale || 'medium';
-
-  hasLogo = Boolean(data.logo_url);
-  if (hasLogo) dom.logoEl.src = data.logo_url;
-  // Admin-configurable, not a fixed CSS class — every mosque's logo has
-  // different proportions, so this is a real dial, not a fixed Tailwind
-  // step. Width is left to `auto` so the aspect ratio is preserved.
-  dom.logoEl.style.height = `${data.logo_height_px}px`;
-  dom.logoEl.style.width = 'auto';
-  // Re-sync immediately rather than waiting for the next state
-  // transition — a logo can be uploaded/removed while already Idle.
-  dom.logoEl.classList.toggle('hidden', !hasLogo || !isIdleGroup(currentStateName));
 
   carousel.setTimingsDuration(data.timings_duration_sec);
 
@@ -237,5 +218,13 @@ export function updateStaticFields(data) {
   dom.bannerMasjidNameEl.textContent = data.masjid_name || '';
   const showBannerLogo = Boolean(data.show_masjid_logo_banner && data.logo_url);
   dom.bannerMasjidLogoEl.classList.toggle('hidden', !showBannerLogo);
-  if (showBannerLogo) dom.bannerMasjidLogoEl.src = data.logo_url;
+  if (showBannerLogo) {
+    dom.bannerMasjidLogoEl.src = data.logo_url;
+    // Admin-configurable (same logo_height_px used to size the old corner
+    // logo), but capped — the banner is a slim, fixed-role bar, unlike the
+    // old idle-group corner placement which had a full quarter-screen to
+    // work with. Width stays `auto` so the aspect ratio is preserved.
+    dom.bannerMasjidLogoEl.style.height = `${Math.min(data.logo_height_px, BANNER_LOGO_MAX_PX)}px`;
+    dom.bannerMasjidLogoEl.style.width = 'auto';
+  }
 }
