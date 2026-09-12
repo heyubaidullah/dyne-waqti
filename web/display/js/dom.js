@@ -2,7 +2,6 @@
 // load. Nothing else in the app calls querySelector on a per-tick basis —
 // this is part of what keeps the 24/7 tick loop allocation-free.
 
-export const logoEl = document.getElementById('logo');
 export const idleFlyer = document.getElementById('idle-flyer');
 export const carouselSlide = document.getElementById('carousel-slide');
 export const idleText = document.getElementById('idle-text');

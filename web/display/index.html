@@ -15,15 +15,6 @@
            height rather than the full viewport, so nothing can overlap the
            banner by construction. -->
       <div id="content" class="relative flex-1 min-h-0">
-        <!-- Masjid logo: part of the idle group, shown/hidden together with
-             the flyer/timings pages (Idle/Countdown only). Height is set
-             inline by render.js from the admin-configured logo_height_px —
-             every mosque's logo has different proportions, so the app
-             doesn't enforce a fixed size. max-w-[40vw] is a generous safety
-             net only, to stop a pathological aspect-ratio upload from
-             overflowing the screen, not a real size constraint. -->
-        <img id="logo" class="hidden absolute top-4 right-4 max-w-[40vw] object-contain z-20 rounded bg-surface-slate/70 p-1" alt="Masjid logo" />
-
         <!-- Idle: full-screen flyer phase — a Full Screen image slide fills
              the entire screen for its own duration. Text slides and In
              Screen image slides never use this view; they use #idle-text
@@ -161,18 +152,23 @@
            intentional purpose). Reserves its own layout space (shrink-0)
            rather than overlaying #content, so it can never cover other
            content. Left side (masjid name/logo) is admin-toggleable; the
-           right side (Waqti attribution) is not. -->
-      <div id="powered-by-banner" class="shrink-0 h-14 flex items-center justify-between gap-4 px-6 bg-surface-slate border-t border-white/10">
-        <div class="flex items-center gap-2 min-w-0">
-          <img id="banner-masjid-logo" class="hidden h-9 w-9 object-contain rounded shrink-0" alt="Masjid logo" />
-          <span id="banner-masjid-name" class="hidden text-base font-medium truncate"></span>
+           right side (Waqti attribution) is not. Auto height (no fixed
+           h-*) so a two-line masjid name has room to wrap. -->
+      <div id="powered-by-banner" class="shrink-0 flex items-center justify-between gap-6 px-6 py-2.5 bg-background-dark border-t border-white/10">
+        <div class="flex items-center gap-3 min-w-0">
+          <img id="banner-masjid-logo" class="hidden h-10 w-10 object-contain rounded shrink-0" alt="Masjid logo" />
+          <span id="banner-masjid-name" class="hidden text-lg leading-tight text-text-primary max-w-md line-clamp-2"></span>
         </div>
-        <div class="flex flex-col items-end leading-tight shrink-0">
-          <div class="flex items-center gap-1.5">
-            <span class="text-xs text-text-secondary">Powered by</span>
-            <img src="/display/branding/waqti-logo.svg" alt="Waqti" class="h-4" />
+        <div class="flex items-center gap-3 shrink-0">
+          <div class="text-right leading-tight">
+            <div class="text-sm text-text-secondary">Powered by</div>
+            <div class="text-lg font-bold text-text-primary">Waqti</div>
           </div>
-          <span class="text-[10px] text-text-secondary/70">Free and Open Source</span>
+          <img src="/display/branding/waqti-mark-color.svg" alt="" class="h-9 w-9 shrink-0" />
+          <div class="text-sm text-text-secondary leading-tight">
+            <div>Free and</div>
+            <div>Open Source</div>
+          </div>
         </div>
       </div>
     </div>
