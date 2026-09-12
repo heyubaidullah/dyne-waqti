@@ -3,6 +3,7 @@ import Paper from '@mui/material/Paper'
 import Typography from '@mui/material/Typography'
 import Stack from '@mui/material/Stack'
 import Grid from '@mui/material/Grid'
+import TextField from '@mui/material/TextField'
 import Button from '@mui/material/Button'
 import Alert from '@mui/material/Alert'
 import FormControlLabel from '@mui/material/FormControlLabel'
@@ -14,9 +15,13 @@ const PRAYERS = [
   ['fajr', 'Fajr'],
   ['dhuhr', 'Dhuhr'],
   ['asr', 'Asr'],
-  ['maghrib', 'Maghrib'],
   ['isha', 'Isha'],
 ]
+
+// Where Maghrib sits in the on-screen order (after Asr, before Isha) —
+// it's rendered separately below since it isn't a fixed-time field like
+// the other four, but should still appear in the expected sequence.
+const MAGHRIB_INDEX = 3
 
 export default function PrayerTimesForm({ prayerTimes, runGuarded }) {
   const [form, setForm] = useState(() => ({ ...prayerTimes }))
@@ -29,6 +34,10 @@ export default function PrayerTimesForm({ prayerTimes, runGuarded }) {
 
   const setTime = (key) => (value) => {
     setForm({ ...form, [key]: value })
+    setSaved(false)
+  }
+  const setField = (key) => (e) => {
+    setForm({ ...form, [key]: e.target.value })
     setSaved(false)
   }
 
@@ -59,30 +68,67 @@ export default function PrayerTimesForm({ prayerTimes, runGuarded }) {
         Prayer times
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        Enter the exact Azaan and Iqamah time for each prayer — whatever you type is exactly what shows up on the display, every day, until you change it here again. "Calculated" below each prayer is today's astronomical time, shown only as a reference (e.g. for Fajr and Maghrib, which shift with sunrise/sunset) — it's never applied automatically.
+        Enter the exact Azaan and Iqamah time for each prayer — whatever you type is exactly what shows up on the display, every day, until you change it here again. "Calculated" is today's astronomical time, shown only as a reference — it's never applied automatically. Maghrib is the one exception: sunset shifts too much day to day for a fixed time, so its Azaan always matches the calculated sunset — you only set how many minutes after it Iqamah is held.
       </Typography>
       <form onSubmit={save}>
         <Grid container spacing={3}>
-          {PRAYERS.map(([key, label]) => (
-            <Grid key={key} size={{ xs: 12, sm: 6 }}>
-              <Typography variant="subtitle2">{label}</Typography>
-              {prayerTimes.calculated?.[key] && (
-                <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 0.5 }}>
-                  Calculated: {formatTime12h(prayerTimes.calculated[key])}
+          {PRAYERS.flatMap(([key, label], index) => {
+            const fields = (
+              <Grid key={key} size={{ xs: 12, sm: 6 }}>
+                <Typography variant="subtitle2">{label}</Typography>
+                {prayerTimes.calculated?.[key] && (
+                  <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
+                    Calculated: {formatTime12h(prayerTimes.calculated[key])}
+                  </Typography>
+                )}
+                <Stack spacing={1.5}>
+                  <TimeField12h label="Azaan" value={form[`azaan_${key}_time`]} onChange={setTime(`azaan_${key}_time`)} disabled={busy} />
+                  <TimeField12h label="Iqamah" value={form[`iqamah_${key}_time`]} onChange={setTime(`iqamah_${key}_time`)} disabled={busy} />
+                </Stack>
+              </Grid>
+            )
+            if (index !== MAGHRIB_INDEX) return [fields]
+            return [
+              <Grid key="maghrib" size={{ xs: 12, sm: 6 }}>
+                <Typography variant="subtitle2">Maghrib</Typography>
+                <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
+                  Azaan automatically matches sunset — no need to update it yourself.
                 </Typography>
-              )}
-              <Stack direction="row" spacing={2} flexWrap="wrap">
-                <TimeField12h label="Azaan" value={form[`azaan_${key}_time`]} onChange={setTime(`azaan_${key}_time`)} disabled={busy} />
-                <TimeField12h label="Iqamah" value={form[`iqamah_${key}_time`]} onChange={setTime(`iqamah_${key}_time`)} disabled={busy} />
-              </Stack>
-            </Grid>
-          ))}
+                <Stack spacing={1.5}>
+                  <Stack spacing={0.5}>
+                    <Typography variant="caption" color="text.secondary">
+                      Azaan (automatic)
+                    </Typography>
+                    <TextField value={prayerTimes.maghrib_azaan ? formatTime12h(prayerTimes.maghrib_azaan) : '—'} size="small" disabled sx={{ width: 260 }} />
+                  </Stack>
+                  <Stack spacing={0.5}>
+                    <TextField
+                      label="Iqamah — minutes after Azaan"
+                      type="number"
+                      value={form.iqamah_maghrib_offset_min}
+                      onChange={setField('iqamah_maghrib_offset_min')}
+                      size="small"
+                      disabled={busy}
+                      sx={{ width: 260 }}
+                      slotProps={{ htmlInput: { min: 0, max: 30 } }}
+                    />
+                    {prayerTimes.maghrib_iqamah && (
+                      <Typography variant="caption" color="text.secondary">
+                        Today: {formatTime12h(prayerTimes.maghrib_iqamah)}
+                      </Typography>
+                    )}
+                  </Stack>
+                </Stack>
+              </Grid>,
+              fields,
+            ]
+          })}
         </Grid>
 
         <Typography variant="subtitle2" sx={{ mt: 3 }}>
           Jumu'ah
         </Typography>
-        <Stack direction="row" spacing={3} alignItems="center" sx={{ mt: 1 }} flexWrap="wrap">
+        <Stack direction="row" spacing={3} alignItems="flex-start" sx={{ mt: 1 }} flexWrap="wrap">
           <Stack spacing={0.5}>
             <FormControlLabel
               control={<Switch size="small" checked={!jumuah1Auto} onChange={(e) => setJumuah1Auto(!e.target.checked)} disabled={busy} />}

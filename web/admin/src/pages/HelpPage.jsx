@@ -14,7 +14,7 @@ const FAQS = [
   },
   {
     q: 'How do the Azaan and Iqamah times work?',
-    a: "In the Prayer times section, type the exact time Azaan is called and the exact time Iqamah starts, for each prayer — whatever you enter is exactly what shows on the display, every day, until you come back and change it. \"Calculated\" underneath each prayer is only a reference (today's astronomical time from your location) to help you decide what to set — it's never applied automatically. Because sunrise and sunset shift through the year, Fajr and Maghrib especially may need updating every few weeks; the other prayers drift more slowly.",
+    a: "In the Prayer times section, type the exact time Azaan is called and the exact time Iqamah starts, for Fajr, Dhuhr, Asr, and Isha — whatever you enter is exactly what shows on the display, every day, until you come back and change it. \"Calculated\" underneath each prayer is only a reference (today's astronomical time from your location) to help you decide what to set — it's never applied automatically. Because sunrise shifts through the year, Fajr especially may need updating every few weeks; the others drift more slowly. Maghrib works differently: since sunset moves too much day to day for a fixed time to stay accurate, its Azaan always matches the calculated sunset automatically — you only set how many minutes after it Iqamah is held.",
   },
   {
     q: "What does the Jumu'ah 1 / 2 toggle do?",
