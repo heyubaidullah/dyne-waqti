@@ -4,11 +4,15 @@ Offline-first mosque digital signage: a single Go binary serving a 24/7
 `/display` kiosk view (prayer times, Hijri date, flyers, Iqamah countdown,
 Janazah alerts) and a password-protected `/admin` panel for managing it.
 
-**Status: v1.0.0** — backend, the React `/admin` panel, and the
-vanilla-JS `/display` kiosk view are all built, tested, and merged, with
-CI-driven Windows release builds (see [CHANGELOG.md](CHANGELOG.md)). Not
-yet done: a live NSSM/Windows-service run on real hardware and a genuine
-multi-day soak test of `/display`.
+**Status: v0.2 (unreleased, on `feature/v0.2-pilot-feedback`)** — v1.0.1
+is the latest tagged release; this branch adds pilot-feedback fixes and
+features on top of it (see [CHANGELOG.md](CHANGELOG.md) for the full
+list): independent Azaan/Iqamah offsets, Jumu'ah 1/2 support, a Display
+Settings panel (font size, Gregorian date, silence-screen duration,
+"Powered by Waqti" attribution banner, opt-in weather), Full Screen/In
+Screen flyer display modes, and an in-admin Help/FAQ page. Not yet done:
+a live NSSM/Windows-service run on real hardware and a genuine multi-day
+soak test of `/display`.
 
 ## Requirements
 
@@ -41,7 +45,7 @@ below instead.
 ```sh
 make build      # -> ./waqti (builds both frontends first, then the Go binary)
 make run        # build + run
-make test       # go test ./...
+make test       # go test ./... && (cd web/display && npm test)
 make build-windows   # cross-compile a Windows .exe from any host — no Node/Go needed on the target machine
 make build-backend-only   # Go-only rebuild, skips the npm builds (uses whatever's already in internal/api/*ui/dist)
 ```
@@ -70,10 +74,15 @@ passphrase after the fact — a known gap, not yet built.)
 | `WAQTI_ADDR` | `:3000` | HTTP listen address. |
 
 Mosque-specific settings (timezone, coordinates, calculation method, Asr
-juristic method, Iqamah offsets, Hijri adjustment) live in the `settings`
-table and are seeded with safe defaults (UTC, 0/0, ISNA) on first run —
-set real values from the `/admin` panel's settings section (or directly
-via `POST /api/v1/admin/settings`).
+juristic method, Hijri adjustment) live in the `settings` table and are
+seeded with safe defaults (UTC, 0/0, ISNA) on first run — set real values
+from the `/admin` panel's settings section (or directly via `POST
+/api/v1/admin/settings`). Per-prayer Azaan/Iqamah offsets and Jumu'ah
+1/2 times live under `/admin`'s Prayer Times section (`GET`/`POST
+/api/v1/admin/prayer-times`); visual/kiosk preferences (font size,
+Gregorian date, silence-screen duration, attribution banner, opt-in
+weather) live under Display Settings (`GET`/`POST
+/api/v1/admin/display-settings`).
 
 ## Data & backups
 

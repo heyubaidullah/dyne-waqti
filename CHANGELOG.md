@@ -6,6 +6,45 @@ follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+Pilot-feedback release, built from the first live masjid deployment.
+
+### Fixed
+
+- Prayer/Iqamah times set from the admin panel could silently revert to
+  uncustomized defaults the next calendar day. The old "Today's prayer
+  times" form saved to a table keyed by the current date, so a masjid's
+  custom times only ever applied to that single day — this looked like
+  "timings changed overnight without anyone touching them." Prayer times
+  are now derived solely from persistent settings on every request, so
+  nothing date-scoped remains to revert.
+- Broadened timezone verification beyond a single US zone: named zones
+  across a wide spread (half-hour offsets, no-DST zones, Southern
+  Hemisphere DST, historically-tricky European zones) are now covered by
+  tests, plus a Southern Hemisphere DST-transition regression test.
+  (The underlying fix — embedding the IANA tzdata database — already
+  shipped in 1.0.1; this closes out the investigation with broader proof.)
+
+### Added
+
+- Independent Azaan offset per prayer, separate from the existing Iqamah
+  offset — Iqamah is now offset from the (possibly customized) Azaan
+  time rather than the raw calculated time, matching real masjid practice.
+- Jumu'ah 1 / Jumu'ah 2 support — masjids that hold a second Friday
+  prayer can add a second time slot; the display renders one or two rows
+  accordingly.
+- **Display Settings** panel: prayer-timings font size (small/medium/
+  large), a toggle for showing the Gregorian date alongside the Hijri
+  date, a configurable silence-screen duration after prayer time
+  (default 7 minutes, 1-15 minute range), and an opt-in weather display
+  (via Open-Meteo, no API key, fails silently offline).
+- Always-visible "Powered by Waqti" attribution banner on `/display`,
+  with an independently-toggleable masjid name/logo on the opposite side.
+- Full Screen / In Screen display mode for image flyers — In Screen
+  shows the flyer above the persistent prayer-times ribbon instead of
+  filling the whole screen.
+- In-admin Help/FAQ page, plus inline tooltips on the timezone and
+  Azaan/Iqamah offset fields.
+
 ## [1.0.1] - 2026-08-16
 
 ### Fixed
