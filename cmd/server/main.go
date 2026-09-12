@@ -52,6 +52,7 @@ func main() {
 		Auth:        authManager,
 		Cfg:         cfg,
 		Broadcaster: api.NewBroadcaster(),
+		Weather:     api.NewWeatherCache(),
 	}
 	mux := api.NewRouter(deps)
 
