@@ -28,11 +28,13 @@ build-display:
 	mkdir -p internal/api/displayui/dist
 	cp web/display/index.html internal/api/displayui/dist/
 	cp -r web/display/js internal/api/displayui/dist/
+	rm -f internal/api/displayui/dist/js/*.test.js
 	cp -r web/display/fonts internal/api/displayui/dist/
 	cp -r web/display/branding internal/api/displayui/dist/
 
 test:
 	go test ./...
+	cd web/display && npm test
 
 run: build
 	./$(BINARY)

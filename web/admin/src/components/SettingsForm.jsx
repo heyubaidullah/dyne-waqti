@@ -8,6 +8,9 @@ import MenuItem from '@mui/material/MenuItem'
 import Autocomplete from '@mui/material/Autocomplete'
 import Button from '@mui/material/Button'
 import Alert from '@mui/material/Alert'
+import Tooltip from '@mui/material/Tooltip'
+import IconButton from '@mui/material/IconButton'
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import { api } from '../api.js'
 
 // A curated set of common IANA timezones so non-technical staff don't need
@@ -33,6 +36,7 @@ const TIMEZONES = [
   { value: 'Asia/Riyadh', label: 'Arabia Time — Riyadh' },
   { value: 'Asia/Karachi', label: 'Pakistan Time — Karachi' },
   { value: 'Asia/Kolkata', label: 'India Time — Kolkata' },
+  { value: 'Asia/Kolkata', label: 'India Time — Hyderabad' },
   { value: 'Asia/Dhaka', label: 'Bangladesh Time — Dhaka' },
   { value: 'Asia/Jakarta', label: 'Indonesia Western Time — Jakarta' },
   { value: 'Asia/Kuala_Lumpur', label: 'Malaysia Time — Kuala Lumpur' },
@@ -51,14 +55,6 @@ const CALC_METHODS = [
 const ASR_METHODS = [
   ['SHAFI', 'Standard (Shafi/Hanbali/Maliki)'],
   ['HANAFI', 'Hanafi'],
-]
-
-const OFFSET_FIELDS = [
-  ['iqamah_fajr_min', 'Fajr'],
-  ['iqamah_dhuhr_min', 'Dhuhr'],
-  ['iqamah_asr_min', 'Asr'],
-  ['iqamah_maghrib_min', 'Maghrib'],
-  ['iqamah_isha_min', 'Isha'],
 ]
 
 export default function SettingsForm({ settings, runGuarded }) {
@@ -121,7 +117,29 @@ export default function SettingsForm({ settings, runGuarded }) {
                 </li>
               )}
               renderInput={(params) => (
-                <TextField {...params} label="Timezone" size="small" fullWidth placeholder="e.g. America/Chicago" />
+                <TextField
+                  {...params}
+                  label="Timezone"
+                  size="small"
+                  fullWidth
+                  placeholder="e.g. America/Chicago"
+                  slotProps={{
+                    ...params.slotProps,
+                    input: {
+                      ...params.slotProps.input,
+                      endAdornment: (
+                        <>
+                          <Tooltip title="Pick the city closest to your masjid. Prayer times are calculated in this timezone, so an incorrect one will make every time on the display wrong." arrow>
+                            <IconButton size="small" sx={{ p: 0.25 }} aria-label="more info about timezone">
+                              <InfoOutlinedIcon fontSize="inherit" />
+                            </IconButton>
+                          </Tooltip>
+                          {params.slotProps.input.endAdornment}
+                        </>
+                      ),
+                    },
+                  }}
+                />
               )}
             />
           </Grid>
@@ -151,16 +169,27 @@ export default function SettingsForm({ settings, runGuarded }) {
           </Grid>
         </Grid>
 
-        <Typography variant="subtitle2" sx={{ mt: 3, mb: 1 }}>
-          Default Iqamah offsets (minutes after Adhan, used when no daily override is saved)
-        </Typography>
-        <Grid container spacing={2}>
-          {OFFSET_FIELDS.map(([key, label]) => (
-            <Grid key={key} size={{ xs: 6, sm: 2.4 }}>
-              <TextField label={label} type="number" value={form[key]} onChange={setField(key)} size="small" fullWidth />
-            </Grid>
-          ))}
-        </Grid>
+        <Stack direction="row" spacing={2} sx={{ mt: 3 }} alignItems="flex-start">
+          <TextField
+            label="Hijri date adjustment (days)"
+            type="number"
+            value={form.hijri_adjust_days}
+            onChange={setField('hijri_adjust_days')}
+            size="small"
+            sx={{ width: 260 }}
+            slotProps={{
+              input: {
+                endAdornment: (
+                  <Tooltip title="If the Hijri date on the display is a day off from your local moon sighting, use -1 or +1 to correct it." arrow>
+                    <IconButton size="small" sx={{ p: 0.25 }} aria-label="more info about hijri adjustment">
+                      <InfoOutlinedIcon fontSize="inherit" />
+                    </IconButton>
+                  </Tooltip>
+                ),
+              },
+            }}
+          />
+        </Stack>
 
         <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
           <TextField
@@ -170,7 +199,7 @@ export default function SettingsForm({ settings, runGuarded }) {
             onChange={setField('logo_height_px')}
             size="small"
             sx={{ width: 260 }}
-            helperText="Controls how big the uploaded logo appears on the display — every logo's natural proportions differ, so there's no fixed size"
+            helperText="Controls how big the logo appears in the display's footer banner (capped to fit the banner) — every logo's natural proportions differ, so there's no fixed size"
           />
           <TextField
             label="Timings page duration (seconds)"

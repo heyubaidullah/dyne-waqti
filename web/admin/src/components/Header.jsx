@@ -4,7 +4,7 @@ import Typography from '@mui/material/Typography'
 import Button from '@mui/material/Button'
 import Box from '@mui/material/Box'
 
-export default function Header({ onLogout, logoUrl }) {
+export default function Header({ onLogout, onShowHelp, logoUrl }) {
   return (
     <AppBar position="static" color="transparent" elevation={0} sx={{ borderBottom: 1, borderColor: 'divider' }}>
       <Toolbar>
@@ -14,6 +14,11 @@ export default function Header({ onLogout, logoUrl }) {
         <Typography variant="h6" component="h1" sx={{ flexGrow: 1 }}>
           Waqti Admin
         </Typography>
+        {onShowHelp && (
+          <Button color="inherit" onClick={onShowHelp}>
+            Help
+          </Button>
+        )}
         <Button color="inherit" onClick={onLogout}>
           Log out
         </Button>

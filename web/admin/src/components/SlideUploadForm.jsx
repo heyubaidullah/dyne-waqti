@@ -16,6 +16,7 @@ const emptyForm = {
   arabic_text: '',
   expiration_date: '',
   display_duration_sec: '10',
+  display_mode: 'full',
 }
 
 export default function SlideUploadForm({ runGuarded }) {
@@ -43,6 +44,7 @@ export default function SlideUploadForm({ runGuarded }) {
     if (form.expiration_date) data.set('expiration_date', form.expiration_date)
     if (form.type === 'image') {
       data.set('file', file)
+      data.set('display_mode', form.display_mode)
     } else {
       data.set('content', form.content)
     }
@@ -79,6 +81,11 @@ export default function SlideUploadForm({ runGuarded }) {
             <Typography variant="caption" color="text.secondary">
               For best results, use a 16:9 image (1920×1080px recommended) — it fills the whole screen when shown.
             </Typography>
+
+            <RadioGroup row value={form.display_mode} onChange={setField('display_mode')} sx={{ mt: 1 }}>
+              <FormControlLabel value="full" control={<Radio />} label="Full Screen" />
+              <FormControlLabel value="in_screen" control={<Radio />} label="In Screen (above the prayer-times ribbon)" />
+            </RadioGroup>
           </Stack>
         ) : (
           <TextField

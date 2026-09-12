@@ -22,6 +22,7 @@ type Deps struct {
 	Auth        *auth.Manager
 	Cfg         *config.Config
 	Broadcaster *Broadcaster
+	Weather     *WeatherCache
 }
 
 func respondJSON(w http.ResponseWriter, status int, v any) {

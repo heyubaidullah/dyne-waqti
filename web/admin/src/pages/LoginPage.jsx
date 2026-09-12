@@ -5,6 +5,7 @@ import TextField from '@mui/material/TextField'
 import Button from '@mui/material/Button'
 import Typography from '@mui/material/Typography'
 import Alert from '@mui/material/Alert'
+import Link from '@mui/material/Link'
 import { api, RateLimitError } from '../api.js'
 import Footer from '../components/Footer.jsx'
 
@@ -12,6 +13,7 @@ export default function LoginPage({ onLogin }) {
   const [passphrase, setPassphrase] = useState('')
   const [error, setError] = useState(null)
   const [submitting, setSubmitting] = useState(false)
+  const [showRecovery, setShowRecovery] = useState(false)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -61,6 +63,21 @@ export default function LoginPage({ onLogin }) {
               {submitting ? 'Logging in…' : 'Log in'}
             </Button>
           </form>
+          <Box sx={{ mt: 2, textAlign: 'center' }}>
+            <Link component="button" type="button" variant="body2" onClick={() => setShowRecovery((v) => !v)}>
+              Forgot the passphrase?
+            </Link>
+          </Box>
+          {showRecovery && (
+            <Alert severity="info" sx={{ mt: 2 }}>
+              Ask whoever set up this screen to run{' '}
+              <strong>Reset-Passphrase.bat</strong> (in the Waqti folder), or,
+              from a terminal, run Waqti with{' '}
+              <code>--reset-passphrase</code>. That prints a brand-new
+              passphrase — nothing else on this screen or its settings is
+              affected.
+            </Alert>
+          )}
         </Paper>
       </Box>
       <Footer />

@@ -67,6 +67,9 @@ export default function SlideList({ slides, runGuarded }) {
               <Stack direction="row" spacing={1} alignItems="center">
                 <span>{slide.title}</span>
                 <Chip size="small" label={slide.type === 'image' ? 'Image' : 'Text'} />
+                {slide.type === 'image' && (
+                  <Chip size="small" variant="outlined" label={slide.display_mode === 'in_screen' ? 'In Screen' : 'Full Screen'} />
+                )}
               </Stack>
             }
             secondary={slide.type === 'text_verse' ? slide.content_url_or_text : slide.content_url_or_text}

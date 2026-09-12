@@ -14,11 +14,12 @@ func TestBackupIsRestorable(t *testing.T) {
 	if err := SetSetting(database, "timezone", "America/Chicago"); err != nil {
 		t.Fatalf("SetSetting: %v", err)
 	}
-	if err := UpsertPrayerSchedule(database, PrayerSchedule{
-		Date: "2026-08-13", FajrIqamah: "05:30", DhuhrIqamah: "13:30",
-		AsrIqamah: "17:15", MaghribIqamah: "19:45", IshaIqamah: "21:00", JumuahIqamah: "13:30",
-	}); err != nil {
-		t.Fatalf("UpsertPrayerSchedule: %v", err)
+	slideID, err := InsertSlide(database, Slide{
+		Title: "Flyer", Type: "image", ContentURLOrText: "/uploads/flyer.png",
+		IsActive: true, DisplayDurationSec: 10, DisplayMode: "full",
+	})
+	if err != nil {
+		t.Fatalf("InsertSlide: %v", err)
 	}
 
 	backupsDir := t.TempDir()
@@ -41,12 +42,12 @@ func TestBackupIsRestorable(t *testing.T) {
 		t.Errorf("restored timezone = %q, want %q", tz, "America/Chicago")
 	}
 
-	sched, err := GetPrayerSchedule(restored, "2026-08-13")
+	slide, err := GetSlide(restored, slideID)
 	if err != nil {
-		t.Fatalf("GetPrayerSchedule on restored db: %v", err)
+		t.Fatalf("GetSlide on restored db: %v", err)
 	}
-	if sched.FajrIqamah != "05:30" {
-		t.Errorf("restored FajrIqamah = %q, want %q", sched.FajrIqamah, "05:30")
+	if slide.Title != "Flyer" || slide.DisplayMode != "full" {
+		t.Errorf("restored slide = %+v, want Title=Flyer DisplayMode=full", slide)
 	}
 }
 

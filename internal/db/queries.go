@@ -27,48 +27,6 @@ func SetSetting(db *sql.DB, key, value string) error {
 	return err
 }
 
-// --- prayer_schedules ---
-
-type PrayerSchedule struct {
-	Date          string // YYYY-MM-DD
-	FajrIqamah    string
-	DhuhrIqamah   string
-	AsrIqamah     string
-	MaghribIqamah string
-	IshaIqamah    string
-	JumuahIqamah  string
-}
-
-func GetPrayerSchedule(db *sql.DB, date string) (*PrayerSchedule, error) {
-	var s PrayerSchedule
-	err := db.QueryRow(`
-		SELECT date, fajr_iqamah, dhuhr_iqamah, asr_iqamah, maghrib_iqamah, isha_iqamah, jumuah_iqamah
-		FROM prayer_schedules WHERE date = ?`, date).
-		Scan(&s.Date, &s.FajrIqamah, &s.DhuhrIqamah, &s.AsrIqamah, &s.MaghribIqamah, &s.IshaIqamah, &s.JumuahIqamah)
-	if errors.Is(err, sql.ErrNoRows) {
-		return nil, ErrNotFound
-	}
-	if err != nil {
-		return nil, err
-	}
-	return &s, nil
-}
-
-func UpsertPrayerSchedule(db *sql.DB, s PrayerSchedule) error {
-	_, err := db.Exec(`
-		INSERT INTO prayer_schedules (date, fajr_iqamah, dhuhr_iqamah, asr_iqamah, maghrib_iqamah, isha_iqamah, jumuah_iqamah)
-		VALUES (?, ?, ?, ?, ?, ?, ?)
-		ON CONFLICT(date) DO UPDATE SET
-			fajr_iqamah = excluded.fajr_iqamah,
-			dhuhr_iqamah = excluded.dhuhr_iqamah,
-			asr_iqamah = excluded.asr_iqamah,
-			maghrib_iqamah = excluded.maghrib_iqamah,
-			isha_iqamah = excluded.isha_iqamah,
-			jumuah_iqamah = excluded.jumuah_iqamah`,
-		s.Date, s.FajrIqamah, s.DhuhrIqamah, s.AsrIqamah, s.MaghribIqamah, s.IshaIqamah, s.JumuahIqamah)
-	return err
-}
-
 // --- slides ---
 
 type Slide struct {
@@ -80,11 +38,12 @@ type Slide struct {
 	IsActive           bool
 	ExpirationDate     sql.NullString
 	DisplayDurationSec int
+	DisplayMode        string // "full" | "in_screen" — image slides only; text slides are always in-screen
 	CreatedAt          time.Time
 }
 
 func ListSlides(db *sql.DB, activeOnly bool) ([]Slide, error) {
-	q := `SELECT id, title, type, content_url_or_text, arabic_text, is_active, expiration_date, display_duration_sec, created_at FROM slides`
+	q := `SELECT id, title, type, content_url_or_text, arabic_text, is_active, expiration_date, display_duration_sec, display_mode, created_at FROM slides`
 	if activeOnly {
 		q += ` WHERE is_active = 1`
 	}
@@ -100,7 +59,7 @@ func ListSlides(db *sql.DB, activeOnly bool) ([]Slide, error) {
 	for rows.Next() {
 		var s Slide
 		var isActive int
-		if err := rows.Scan(&s.ID, &s.Title, &s.Type, &s.ContentURLOrText, &s.ArabicText, &isActive, &s.ExpirationDate, &s.DisplayDurationSec, &s.CreatedAt); err != nil {
+		if err := rows.Scan(&s.ID, &s.Title, &s.Type, &s.ContentURLOrText, &s.ArabicText, &isActive, &s.ExpirationDate, &s.DisplayDurationSec, &s.DisplayMode, &s.CreatedAt); err != nil {
 			return nil, err
 		}
 		s.IsActive = isActive != 0
@@ -113,9 +72,9 @@ func GetSlide(db *sql.DB, id int64) (*Slide, error) {
 	var s Slide
 	var isActive int
 	err := db.QueryRow(`
-		SELECT id, title, type, content_url_or_text, arabic_text, is_active, expiration_date, display_duration_sec, created_at
+		SELECT id, title, type, content_url_or_text, arabic_text, is_active, expiration_date, display_duration_sec, display_mode, created_at
 		FROM slides WHERE id = ?`, id).
-		Scan(&s.ID, &s.Title, &s.Type, &s.ContentURLOrText, &s.ArabicText, &isActive, &s.ExpirationDate, &s.DisplayDurationSec, &s.CreatedAt)
+		Scan(&s.ID, &s.Title, &s.Type, &s.ContentURLOrText, &s.ArabicText, &isActive, &s.ExpirationDate, &s.DisplayDurationSec, &s.DisplayMode, &s.CreatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrNotFound
 	}
@@ -128,9 +87,9 @@ func GetSlide(db *sql.DB, id int64) (*Slide, error) {
 
 func InsertSlide(db *sql.DB, s Slide) (int64, error) {
 	res, err := db.Exec(`
-		INSERT INTO slides (title, type, content_url_or_text, arabic_text, is_active, expiration_date, display_duration_sec)
-		VALUES (?, ?, ?, ?, ?, ?, ?)`,
-		s.Title, s.Type, s.ContentURLOrText, s.ArabicText, boolToInt(s.IsActive), s.ExpirationDate, s.DisplayDurationSec)
+		INSERT INTO slides (title, type, content_url_or_text, arabic_text, is_active, expiration_date, display_duration_sec, display_mode)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+		s.Title, s.Type, s.ContentURLOrText, s.ArabicText, boolToInt(s.IsActive), s.ExpirationDate, s.DisplayDurationSec, s.DisplayMode)
 	if err != nil {
 		return 0, err
 	}

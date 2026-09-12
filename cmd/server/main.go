@@ -6,6 +6,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"flag"
 	"log"
 	"net/http"
 	"os"
@@ -23,6 +24,9 @@ import (
 const backupTickInterval = 6 * time.Hour
 
 func main() {
+	resetPassphrase := flag.Bool("reset-passphrase", false, "clear the admin passphrase and print a freshly generated one, then exit (use when the current passphrase is lost)")
+	flag.Parse()
+
 	cfg, err := config.Load()
 	if err != nil {
 		log.Fatalf("config.Load: %v", err)
@@ -42,6 +46,17 @@ func main() {
 		log.Fatalf("api.SeedDefaultSettings: %v", err)
 	}
 
+	if *resetPassphrase {
+		if _, err := database.Exec(`DELETE FROM admin_credentials`); err != nil {
+			log.Fatalf("failed to clear admin passphrase: %v", err)
+		}
+		if err := auth.NewManager(database).Bootstrap(); err != nil {
+			log.Fatalf("auth.Bootstrap: %v", err)
+		}
+		log.Printf("Passphrase reset. Use the one printed above to log in at /admin, then change it from the settings page.")
+		return
+	}
+
 	authManager := auth.NewManager(database)
 	if err := authManager.Bootstrap(); err != nil {
 		log.Fatalf("auth.Bootstrap: %v", err)
@@ -52,6 +67,7 @@ func main() {
 		Auth:        authManager,
 		Cfg:         cfg,
 		Broadcaster: api.NewBroadcaster(),
+		Weather:     api.NewWeatherCache(),
 	}
 	mux := api.NewRouter(deps)
 
