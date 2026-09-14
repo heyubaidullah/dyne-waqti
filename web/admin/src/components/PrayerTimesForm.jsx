@@ -47,8 +47,21 @@ export default function PrayerTimesForm({ prayerTimes, runGuarded }) {
     setBusy(true)
     try {
       await runGuarded(() =>
+        // Explicit field list, not `{...form}` — `form` is seeded from the
+        // GET response, which also carries read-only reference fields
+        // (calculated, maghrib_azaan, maghrib_iqamah). The backend's JSON
+        // decoder rejects unknown fields, so spreading all of `form` into
+        // the POST body made every save fail with 400.
         api.updatePrayerTimes({
-          ...form,
+          azaan_fajr_time: form.azaan_fajr_time,
+          azaan_dhuhr_time: form.azaan_dhuhr_time,
+          azaan_asr_time: form.azaan_asr_time,
+          azaan_isha_time: form.azaan_isha_time,
+          iqamah_fajr_time: form.iqamah_fajr_time,
+          iqamah_dhuhr_time: form.iqamah_dhuhr_time,
+          iqamah_asr_time: form.iqamah_asr_time,
+          iqamah_isha_time: form.iqamah_isha_time,
+          iqamah_maghrib_offset_min: form.iqamah_maghrib_offset_min,
           jumuah_count: jumuah2Enabled ? 2 : 1,
           jumuah_1_iqamah: jumuah1Auto ? '' : form.jumuah_1_iqamah,
           jumuah_2_iqamah: jumuah2Auto ? '' : form.jumuah_2_iqamah,
