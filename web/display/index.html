@@ -127,8 +127,11 @@
           </div>
         </div>
 
-        <!-- Overlays -->
-        <div id="state-countdown" class="hidden absolute inset-0 flex flex-col items-center justify-end pb-12 bg-black/60">
+        <!-- Overlays: full-screen takeovers, same as Silence/Blackout/Emergency
+             below — Countdown used to be a translucent overlay left sitting
+             on top of the frozen flyer/ribbon underneath; it now replaces
+             them entirely for a single, uncluttered focal point. -->
+        <div id="state-countdown" class="hidden absolute inset-0 flex flex-col items-center justify-center bg-background-dark">
           <div id="countdown-prayer-name" class="text-3xl text-text-secondary mb-2"></div>
           <div id="countdown-timer" class="text-8xl font-bold text-accent-gold tabular-nums"></div>
         </div>

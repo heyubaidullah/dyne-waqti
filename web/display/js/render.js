@@ -50,12 +50,12 @@ function hideAllOverlays() {
   dom.stateEmergency.classList.add('hidden');
 }
 
-// Idle and Countdown together form the "idle group": Countdown is just a
-// semi-transparent overlay on top of whichever full-screen idle phase
-// (flyer or timings) carousel.js already has showing, frozen in place —
-// it never hides or resets that layer.
+// Only IDLE belongs to the "idle group" — every other state (including
+// Countdown) is its own full-screen takeover, matching Silence/Blackout/
+// Emergency: whatever flyer/ribbon carousel.js had showing is hidden, not
+// left dimmed underneath.
 function isIdleGroup(stateName) {
-  return stateName === 'IDLE' || stateName === 'COUNTDOWN';
+  return stateName === 'IDLE';
 }
 
 // Called every tick, but only acts when the state actually changed since
@@ -75,7 +75,6 @@ export function applyState(result, nowMs) {
 
   if (enteringIdleGroup) {
     if (!wasInIdleGroup) carousel.restart(nowMs);
-    if (result.state === 'COUNTDOWN') dom.stateCountdown.classList.remove('hidden');
     return;
   }
 
@@ -86,6 +85,9 @@ export function applyState(result, nowMs) {
   dom.idleTimings.classList.add('hidden');
 
   switch (result.state) {
+    case 'COUNTDOWN':
+      dom.stateCountdown.classList.remove('hidden');
+      break;
     case 'SILENCE':
       dom.stateSilence.classList.remove('hidden');
       break;
